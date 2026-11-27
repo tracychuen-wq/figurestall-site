@@ -8,8 +8,8 @@
   --gold: #b08a3e;
   --gold-d: #8c6c2c;
   --white: #fff;
-  --serif: 'Microsoft JhengHei', '微軟正黑體', 'PingFang TC', 'Heiti TC', 'Noto Sans TC', sans-serif;
-  --sans: 'Microsoft JhengHei', '微軟正黑體', 'PingFang TC', 'Heiti TC', 'Noto Sans TC', system-ui, sans-serif;
+  --serif: 'Huninn', 'jf open 粉圓', 'Noto Sans TC', 'PingFang TC', 'Microsoft JhengHei', sans-serif;
+  --sans: 'Noto Sans TC', 'PingFang TC', 'Microsoft JhengHei', system-ui, sans-serif;
   --r: 6px;
   --wrap: 1180px;
 }
@@ -254,3 +254,6 @@ section.dark h2 { color: #fff; }
 .audience li.has-photo img { width: 100%; height: auto; aspect-ratio: 4 / 3; object-fit: cover; margin: 0 0 12px; border-radius: 0; background: var(--paper); }
 .audience li.has-photo h3, .audience li.has-photo p { padding: 0 14px; }
 .audience li.has-photo:hover img { opacity: .9; }
+
+/* 粉圓體只有一種粗細，標題不要再加粗，避免字變糊 */
+h1, h2, h3, .values strong, .footer-brand, .card h3, .steps h3 { font-weight: 400; }
