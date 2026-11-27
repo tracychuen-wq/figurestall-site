@@ -1,0 +1,102 @@
+{
+  "name": "公仔小舖 Figurestall",
+  "legalName": "公仔小舖",
+  "tagline": "照片客製 Q 版人像公仔，捏麵人師傅手工捏製",
+  "slogan": "照著你的照片，一尊一尊手工捏",
+  "description": "公仔小舖是做客製人像公仔的小店，由捏麵人出身的吳吉安師傅用軟陶照著客人照片手工捏製 Q 版公仔，有個人、情侶、結婚、畢業、運動、軍警、獎盃、25 公分大公仔與團體公仔，也能加做場景、壓克力盒與字牌。個人公仔 NT$2,380 起，高約 15 公分，製作約 7～10 天，以黑貓宅急便寄送全台灣。台北大安區、台中南區各有一間門市，LINE @267xshxa 可傳照片詢問。",
+  "brandShort": "公仔小舖",
+  "brandAlt": [
+    "Figurestall",
+    "figurestall.com"
+  ],
+  "owner": "吳吉安師傅",
+  "ownerName": "吳吉安",
+  "ownerNick": "吳師傅",
+  "ownerTitle": "捏麵人師傅",
+  "ownerBackground": "傳統捏麵人出身",
+  "highlights": [
+    "照片客製、師傅手工捏製",
+    "個人公仔 NT$2,380 起",
+    "製作約 7～10 天，黑貓寄送全台",
+    "台北、台中門市"
+  ],
+  "businessType": [
+    "Store"
+  ],
+  "knowsAbout": [
+    "客製公仔",
+    "人像公仔",
+    "Q版公仔",
+    "捏麵人",
+    "軟陶公仔",
+    "情侶公仔",
+    "結婚公仔",
+    "畢業公仔",
+    "獎盃公仔",
+    "退休禮物",
+    "團體公仔",
+    "客製化禮物"
+  ],
+  "phone": "0910-888-373",
+  "phoneRaw": "+886910888373",
+  "lineId": "@267xshxa",
+  "lineUrl": "https://line.me/R/ti/p/@267xshxa",
+  "shopUrl": "https://www.figurestall.com/products.php",
+  "shopLabel": "線上下單",
+  "address": {
+    "street": "瑞安街142巷2號4樓",
+    "district": "大安區",
+    "city": "台北市",
+    "postalCode": "106",
+    "full": "台北市大安區瑞安街142巷2號4樓"
+  },
+  "mapUrl": "https://www.google.com/maps/search/?api=1&query=%E5%8F%B0%E5%8C%97%E5%B8%82%E5%A4%A7%E5%AE%89%E5%8D%80%E7%91%9E%E5%AE%89%E8%A1%97142%E5%B7%B72%E8%99%9F",
+  "geo": {
+    "lat": null,
+    "lng": null
+  },
+  "areas": [
+    "全台灣"
+  ],
+  "hours": "",
+  "social": {
+    "facebook": "",
+    "instagram": "",
+    "threads": "",
+    "youtube": "",
+    "tiktok": "",
+    "googleBusiness": ""
+  },
+  "tracking": {
+    "googleVerification": "",
+    "bingVerification": "",
+    "ga4Id": "",
+    "gtmId": ""
+  },
+  "logo": "/brand/logo-horizontal.png",
+  "logoSquare": "/brand/logo-square.png",
+  "favicon": "/brand/favicon.png",
+  "ogImage": "/uploads/scenes/og.jpg",
+  "heroImages": [
+    "/uploads/scenes/hero.jpg"
+  ],
+  "theme": {
+    "primary": "#2e6b43",
+    "primaryDark": "#1f4d30",
+    "ink": "#22281f",
+    "paper": "#f6f0e7",
+    "accentLight": "#cfe3c9"
+  },
+  "categories": [
+    { "name": "個人公仔", "service": "personal" },
+    { "name": "情侶公仔", "service": "couple" },
+    { "name": "結婚公仔", "service": "wedding" },
+    { "name": "畢業公仔", "service": "graduation" },
+    { "name": "運動公仔", "service": "sports" },
+    { "name": "軍警公仔", "service": "uniform" },
+    { "name": "獎盃公仔", "service": "trophy" },
+    { "name": "25 公分大公仔", "service": "large" },
+    { "name": "團體公仔", "service": "group" },
+    { "name": "場景與配件", "service": "scenes" }
+  ]
+}

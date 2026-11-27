@@ -1,0 +1,18 @@
+---
+import Base from '../../layouts/Base.astro';
+import Crumbs from '../../components/Crumbs.astro';
+import CtaBand from '../../components/CtaBand.astro';
+import PostCard from '../../components/PostCard.astro';
+import { breadcrumb } from '../../lib/schema';
+import { getCollection } from 'astro:content';
+const posts = (await getCollection('blog', (p) => !p.data.draft)).sort((a, b) => +b.data.date - +a.data.date);
+const base = Astro.site!.toString();
+const crumbs = [{ name: '首頁', path: '/' }, { name: pages.labels.blog, path: '/blog/' }];
+import pages from '../../data/pages.json';
+import { fill, rich, md } from '../../lib/text';
+---
+<Base title={fill(pages.blog.seoTitle)} description={fill(pages.blog.seoDescription)} schema={[breadcrumb(base, crumbs)]}>
+  <section class="page-hero"><div class="wrap"><Crumbs items={crumbs} /><h1>{pages.labels.blog}</h1><p>{fill(pages.blog.intro)}</p></div></section>
+  <section class="block"><div class="wrap"><div class="grid g3">{posts.map((p) => <PostCard p={p} />)}</div></div></section>
+  <CtaBand />
+</Base>

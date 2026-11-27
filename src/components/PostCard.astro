@@ -1,0 +1,15 @@
+---
+import { img } from '../lib/img';
+interface Props { p: any }
+const { p } = Astro.props;
+const d = p.data.date.toISOString().slice(0, 10);
+---
+<a class="card" href={`/blog/${p.id}/`}>
+  {p.data.cover && <div class="thumb"><img src={img(p.data.cover, 'lg')} alt="" loading="lazy" width="800" height="600" /></div>}
+  <div class="body">
+    <time class="tag" datetime={d}>{d}</time>
+    <h3>{p.data.title}</h3>
+    <p>{p.data.summary}</p>
+    <span class="more">閱讀全文 →</span>
+  </div>
+</a>

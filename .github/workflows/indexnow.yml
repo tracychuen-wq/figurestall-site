@@ -1,0 +1,26 @@
+name: IndexNow 通知搜尋引擎
+on:
+  push:
+    branches: [main]
+    paths: ['src/**', 'public/**', 'astro.config.mjs']
+  workflow_dispatch: {}
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 2 }
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - name: 等 Cloudflare 部署完成
+        if: github.event_name == 'push'
+        run: sleep 240
+      - name: 送出更新的網址
+        env:
+          SITE_URL: ${{ vars.SITE_URL }}
+        run: |
+          SITE="${SITE_URL:-$(grep -oE "https://[a-zA-Z0-9.-]+" astro.config.mjs | head -1)}"
+          if [ "${{ github.event_name }}" = "push" ] && git rev-parse HEAD~1 >/dev/null 2>&1; then
+            FILES=$(git diff --name-only HEAD~1 HEAD)
+          fi
+          node scripts/indexnow.mjs "$SITE" $FILES

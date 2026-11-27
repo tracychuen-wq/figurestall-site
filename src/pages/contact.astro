@@ -1,0 +1,86 @@
+---
+import Base from '../layouts/Base.astro';
+import Crumbs from '../components/Crumbs.astro';
+import site from '../data/site.json';
+import { breadcrumb } from '../lib/schema';
+import SocialLinks from '../components/SocialLinks.astro';
+import { getCollection } from 'astro:content';
+const services = (await getCollection('services', (s) => !s.data.draft)).sort((a, b) => a.data.order - b.data.order);
+const base = Astro.site!.toString();
+const crumbs = [{ name: '首頁', path: '/' }, { name: pages.labels.contact, path: '/contact/' }];
+const contactPage = { '@context': 'https://schema.org', '@type': 'ContactPage', name: `聯絡${site.brandShort}`, url: new URL('/contact/', base).toString(), about: { '@id': base + '#business' } };
+import pages from '../data/pages.json';
+import { fill, rich, md } from '../lib/text';
+const C = pages.contact;
+---
+<Base title={fill(C.seoTitle)} description={fill(C.seoDescription)} schema={[breadcrumb(base, crumbs), contactPage]}>
+  <section class="page-hero"><div class="wrap"><Crumbs items={crumbs} /><h1>{pages.labels.contact}</h1><p>{fill(C.intro)}</p></div></section>
+  <section class="block"><div class="wrap split" style="align-items:start">
+    <div>
+      <h2>聯絡方式</h2>
+      <ul class="plain" style="font-size:1.08rem;line-height:2.2">
+        <li><strong>負責人</strong>　{site.owner}</li>
+        <li><strong>電話</strong>　<a href={`tel:${site.phoneRaw}`}>{site.phone}</a></li>
+        <li><strong>LINE</strong>　<a href={site.lineUrl} target="_blank" rel="noopener">{site.lineId}</a></li>
+        <li><strong>地址</strong>　<a href={site.mapUrl} target="_blank" rel="noopener">{site.address.full}</a></li>
+        {site.hours && <li><strong>時間</strong>　{site.hours}</li>}
+        <li><strong>服務區域</strong>　{site.areas.join('、')}</li>
+      </ul>
+      <p style="margin-top:18px;display:flex;gap:10px;flex-wrap:wrap">
+        <a class="btn btn-line" href={site.lineUrl} target="_blank" rel="noopener">加 LINE 傳照片</a>
+        <a class="btn btn-gold" href={`tel:${site.phoneRaw}`}>直接撥打</a>
+      </p>
+      <h3 style="margin-top:26px">{fill(C.followTitle)}</h3>
+      <SocialLinks size={44} label />
+      <iframe title={`${site.brandShort}位置地圖`} src={`https://www.google.com/maps?q=${encodeURIComponent(site.address.full)}&output=embed`} width="100%" height="300" style="border:0;border-radius:6px;margin-top:20px" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+    </div>
+    <div class="side-card" style="padding:28px">
+      <h2>{fill(C.formTitle)}</h2>
+      <p class="muted" style="margin-top:-6px">{fill(C.formNote)}</p>
+      <form class="form" id="contact-form" data-line={site.lineId} data-greeting={fill(C.lineGreeting)} data-loc={pages.labels.location} data-cond={C.conditionLabel} data-budget={(pages.labels as any).budget || '預算'}>
+        <div class="row">
+          <div><label for="f-name">姓名</label><input id="f-name" name="name" required autocomplete="name" /></div>
+          <div><label for="f-phone">電話</label><input id="f-phone" name="phone" type="tel" required autocomplete="tel" /></div>
+        </div>
+        <div class="row">
+          <div><label for="f-area">{pages.labels.location}</label><input id="f-area" name="area" placeholder={C.areaPlaceholder} /></div>
+          <div><label for="f-type">需求類型</label>
+            <select id="f-type" name="type">{services.map((s) => <option>{s.data.shortTitle}</option>)}<option>其他</option></select>
+          </div>
+        </div>
+        <div class="row">
+          <div><label for="f-house">{C.conditionLabel}</label><select id="f-house" name="house">{C.conditionOptions.map((o) => <option>{o}</option>)}</select></div>
+          <div><label for="f-budget">{(pages.labels as any).budget || '預算區間'}</label><select id="f-budget" name="budget">{C.budgetOptions.map((o) => <option>{o}</option>)}</select></div>
+        </div>
+        <div><label for="f-msg">需求說明</label><textarea id="f-msg" name="message" placeholder={C.messagePlaceholder}></textarea></div>
+        <button class="btn btn-line" type="submit">用 LINE 送出諮詢</button>
+      </form>
+    </div>
+  </div></section>
+</Base>
+<script>
+  const f = document.getElementById('contact-form') as HTMLFormElement;
+  f?.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const d = new FormData(f);
+    const v = (k: string) => String(d.get(k) || '').trim();
+    const text = [
+      f.dataset.greeting,
+      `姓名：${v('name')}`,
+      `電話：${v('phone')}`,
+      v('area') && `${f.dataset.loc}：${v('area')}`,
+      `需求類型：${v('type')}`,
+      `${f.dataset.cond}：${v('house')}`,
+      `${f.dataset.budget}：${v('budget')}`,
+      v('message') && `說明：${v('message')}`,
+    ].filter(Boolean).join('\n');
+    const id = encodeURIComponent(f.dataset.line || '');
+    const go = () => { location.href = `https://line.me/R/oaMessage/${id}/?${encodeURIComponent(text)}`; };
+    // 表單送出＝潛在客戶（不送姓名、電話等個資）
+    const w = window as any;
+    if (typeof w.fzjTrack === 'function') {
+      w.fzjTrack('generate_lead', { form_name: 'contact', service_type: v('type'), house_condition: v('house'), budget_range: v('budget'), service_area: v('area') });
+      setTimeout(go, 300);
+    } else go();
+  });
+</script>

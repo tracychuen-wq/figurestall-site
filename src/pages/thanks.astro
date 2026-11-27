@@ -1,0 +1,13 @@
+---
+import Base from '../layouts/Base.astro';
+import site from '../data/site.json';
+import pages from '../data/pages.json';
+import { fill, rich, md } from '../lib/text';
+---
+<Base title="已收到您的諮詢" description={`感謝您的諮詢，${site.brandShort}會盡快與您聯繫。`} noindex>
+  <section class="block"><div class="wrap narrow" style="text-align:center">
+    <h1>謝謝，我們已收到您的需求</h1>
+    <p>{fill(pages.thanks.text)}急件歡迎直接撥打 <a href={`tel:${site.phoneRaw}`}>{site.phone}</a> 或加 LINE <a href={site.lineUrl}>{site.lineId}</a>。</p>
+    <p><a class="btn btn-ghost" href="/cases/">先看看{pages.labels.cases}</a></p>
+  </div></section>
+</Base>

@@ -1,0 +1,414 @@
+# ─────────────────────────────────────────────
+# 網站後台（Decap CMS）設定
+# 業主登入網址：https://你的網域/admin/
+# ─────────────────────────────────────────────
+backend:
+  name: github
+  repo: OWNER/REPO   # 建站時在 Cloudflare 環境變數 GITHUB_REPO 設定即可，不用改這裡
+  branch: main
+  # base_url 與 auth_endpoint 由 admin/index.html 依目前網域自動帶入
+  commit_messages:
+    create: '新增 {{collection}}：{{slug}}'
+    update: '更新 {{collection}}：{{slug}}'
+    delete: '刪除 {{collection}}：{{slug}}'
+    uploadMedia: '上傳圖片 {{path}}'
+    deleteMedia: '刪除圖片 {{path}}'
+
+# 本機測試後台時，執行 npx decap-server 再開 http://localhost:4321/admin/
+local_backend: true
+
+locale: zh_Hant
+site_url: /
+display_url: /
+
+# 上傳的照片放這裡（會一起進到網站）
+media_folder: public/uploads
+public_folder: /uploads
+slug:
+  encoding: ascii
+  clean_accents: true
+
+collections:
+  # ───────── 裝潢實錄（最常用）─────────
+  - name: cases
+    editor:
+      preview: false
+    label: 成功案例
+    label_singular: 施工案例
+    description: 新增一個案例：填標題、選分類、上傳照片，按「發布」就會上線（約 1～2 分鐘）。
+    folder: src/content/cases
+    create: true
+    slug: '{{year}}{{month}}{{day}}-{{fields.slug}}'
+    summary: '{{date | date("YYYY-MM-DD")}}｜{{category}}｜{{title}}'
+    sortable_fields: [date, title, category]
+    view_groups:
+      - { label: 分類, field: category }
+    fields:
+      - { name: seo_helper, label: SEO／GEO 小幫手（看右下角即時建議）, widget: seohelper, required: false }
+      - { name: title, label: 案例標題, hint: '建議格式：地區＋行政區＋工程類型＋特色，例：北屯 30 年透天老屋翻新｜水電重拉與浴室防水', widget: string }
+      - { name: slug, label: 網址代稱（英文小寫與 - ）, hint: '例：beitun-old-house。只填英文，用來產生網址。', widget: string, pattern: ['^[a-z0-9-]+$', '只能用英文小寫、數字與 -'] }
+      - name: category
+        label: 案例分類
+        hint: 分類清單在「公司基本資料 → 案例分類」設定
+        widget: relation
+        collection: settings
+        file: site
+        search_fields: ['categories.*.name']
+        value_field: 'categories.*.name'
+        display_fields: ['categories.*.name']
+      - name: service
+        label: 對應的服務頁
+        hint: 案例會自動出現在這個服務頁的下方
+        widget: relation
+        collection: services
+        value_field: '{{slug}}'
+        search_fields: [title, shortTitle]
+        display_fields: [shortTitle]
+      - { name: location, label: 施工地點, hint: '例：○○市○○區（寫到區對 SEO 很有幫助）', widget: string, required: false }
+      - { name: date, label: 完工／紀錄日期, widget: datetime, date_format: 'YYYY-MM-DD', time_format: false, format: 'YYYY-MM-DD' }
+      - { name: summary, label: 案例摘要（1～2 句）, hint: '會顯示在列表與搜尋結果，例：30 年透天全室翻新，重拉水電、浴室重做防水，工期 45 天。', widget: text }
+      - { name: cover, label: 封面照片, widget: image, choose_url: true }
+      - name: photos
+        label: 施工照片
+        label_singular: 照片
+        hint: 可一次加入多張。照片說明寫「施工階段＋位置」，例：浴室防水塗佈施工。
+        widget: list
+        summary: '{{fields.alt}}'
+        fields:
+          - { name: src, label: 照片, widget: image, choose_url: true }
+          - { name: alt, label: 照片說明, widget: string, required: false }
+      - { name: body, label: 案例說明, hint: '寫屋況、遇到的問題、怎麼解決、工期。用「## 小標題」分段。', widget: markdown, required: false }
+      - { name: featured, label: 放到首頁精選, widget: boolean, default: false, required: false }
+      - { name: draft, label: 草稿（勾選後不會上線）, widget: boolean, default: false, required: false }
+      - { name: seoTitle, label: SEO 標題（選填）, widget: string, required: false }
+      - { name: seoDescription, label: SEO 描述（選填）, widget: text, required: false }
+
+  # ───────── 裝潢小知識 ─────────
+  - name: blog
+    editor:
+      preview: false
+    label: 專欄文章
+    label_singular: 文章
+    folder: src/content/blog
+    create: true
+    slug: '{{fields.slug}}'
+    summary: '{{date | date("YYYY-MM-DD")}}｜{{title}}'
+    sortable_fields: [date, title]
+    fields:
+      - { name: seo_helper, label: SEO／GEO 小幫手（看右下角即時建議）, widget: seohelper, required: false }
+      - { name: title, label: 文章標題, hint: '用屋主會搜尋的問句，例：老屋水電要全部換嗎？', widget: string }
+      - { name: slug, label: 網址代稱（英文小寫與 - ）, widget: string, pattern: ['^[a-z0-9-]+$', '只能用英文小寫、數字與 -'] }
+      - { name: date, label: 發布日期, widget: datetime, date_format: 'YYYY-MM-DD', time_format: false, format: 'YYYY-MM-DD' }
+      - { name: updated, label: 最後更新日期, widget: datetime, date_format: 'YYYY-MM-DD', time_format: false, format: 'YYYY-MM-DD', required: false }
+      - { name: summary, label: 文章摘要, hint: '一兩句直接回答標題的問題，AI 搜尋最常引用這裡。', widget: text }
+      - { name: keyPoints, label: 重點整理（條列）, hint: '3～5 點，每點一句話。', widget: list, required: false }
+      - { name: cover, label: 封面圖, widget: image, required: false, choose_url: true }
+      - { name: tags, label: 標籤, widget: list, required: false }
+      - { name: body, label: 內文, widget: markdown }
+      - name: faqs
+        label: 延伸問答（選填）
+        widget: list
+        required: false
+        summary: '{{fields.q}}'
+        fields:
+          - { name: q, label: 問題, widget: string }
+          - { name: a, label: 回答, widget: text }
+      - { name: draft, label: 草稿, widget: boolean, default: false, required: false }
+      - { name: seoTitle, label: SEO 標題（選填）, widget: string, required: false }
+      - { name: seoDescription, label: SEO 描述（選填）, widget: text, required: false }
+
+  # ───────── 服務項目 ─────────
+  - name: services
+    editor:
+      preview: false
+    label: 服務項目
+    label_singular: 服務項目
+    folder: src/content/services
+    create: true
+    slug: '{{fields.slug}}'
+    summary: '{{order}}. {{title}}'
+    sortable_fields: [order, title]
+    fields:
+      - { name: seo_helper, label: SEO／GEO 小幫手（看右下角即時建議）, widget: seohelper, required: false }
+      - { name: title, label: 服務名稱（完整）, widget: string }
+      - { name: shortTitle, label: 服務名稱（簡短）, widget: string }
+      - { name: slug, label: 網址代稱（英文）, widget: string, required: false, hint: '新增時才需要填，已存在的請勿修改' }
+      - { name: order, label: 排序（數字越小越前面）, widget: number, value_type: int, default: 99 }
+      - { name: summary, label: 簡短介紹, widget: text }
+      - { name: answer, label: 一段話說明（給 Google 與 AI 引用）, hint: '說清楚：這是什麼服務、在哪裡、適合誰、大概工期或費用。', widget: text }
+      - { name: cover, label: 封面圖, widget: image, choose_url: true }
+      - { name: shopUrl, label: 線上購買連結（選填）, hint: '有網路商店時填，服務頁側欄會出現購買按鈕；不填就用公司基本資料的連結', widget: string, required: false }
+      - { name: signs, label: 需要這項服務的徵兆, widget: list, required: false }
+      - { name: body, label: 服務說明, widget: markdown }
+      - name: faqs
+        label: 常見問題 Q&A
+        widget: list
+        summary: '{{fields.q}}'
+        fields:
+          - { name: q, label: 問題, widget: string }
+          - { name: a, label: 回答, widget: text }
+      - { name: updated, label: 最後更新日期, widget: datetime, date_format: 'YYYY-MM-DD', time_format: false, format: 'YYYY-MM-DD', required: false }
+      - { name: draft, label: 草稿, widget: boolean, default: false, required: false }
+      - { name: seoTitle, label: SEO 標題（選填）, widget: string, required: false }
+      - { name: seoDescription, label: SEO 描述（選填）, widget: text, required: false }
+
+  # ───────── 公司資料 ─────────
+  - name: settings
+    editor:
+      preview: false
+    label: 公司基本資料
+    files:
+      - name: site
+        label: 聯絡資訊與品牌設定
+        file: src/data/site.json
+        fields:
+          - { name: name, label: 品牌名稱（完整，顯示在網頁標題後面）, widget: string }
+          - { name: brandShort, label: 品牌簡稱（客人怎麼叫你）, widget: string }
+          - { name: brandAlt, label: 品牌其他名稱（英文名、舊名，選填）, widget: list, required: false }
+          - { name: legalName, label: 公司／工程行名稱, widget: string }
+          - { name: tagline, label: 品牌副標, widget: string }
+          - { name: slogan, label: 標語, widget: string }
+          - { name: description, label: 公司介紹（一段話，會給 Google 與 AI 引用）, widget: text }
+          - { name: owner, label: 負責人（顯示用，例：王小明（阿明））, widget: string }
+          - { name: ownerName, label: 負責人本名, widget: string, required: false }
+          - { name: ownerNick, label: 負責人暱稱, widget: string, required: false }
+          - { name: ownerTitle, label: 負責人職稱, widget: string, required: false, default: 負責人 }
+          - { name: ownerBackground, label: 負責人背景（一句話，例：營造背景、20 年經驗）, widget: string, required: false }
+          - { name: highlights, label: 品牌特色（給 AI 讀的重點，每點一句）, widget: list, required: false }
+          - name: businessType
+            label: 商家類型（Google 結構化資料）
+            hint: 選最接近的類型，可複選
+            widget: select
+            multiple: true
+            required: false
+            options:
+              - { label: 居家修繕／裝修營造, value: HomeAndConstructionBusiness }
+              - { label: 統包工程, value: GeneralContractor }
+              - { label: 搬家公司, value: MovingCompany }
+              - { label: 水電行, value: Electrician }
+              - { label: 水管工程, value: Plumber }
+              - { label: 油漆工程, value: HousePainter }
+              - { label: 屋頂工程, value: RoofingContractor }
+              - { label: 鎖匠, value: Locksmith }
+              - { label: 清潔服務, value: HousekeepingService }
+              - { label: 汽車修理, value: AutoRepair }
+              - { label: 二手車行, value: AutoDealer }
+              - { label: 旅行社, value: TravelAgency }
+              - { label: 攝影工作室, value: ProfessionalService }
+              - { label: 一般在地商家, value: LocalBusiness }
+          - { name: knowsAbout, label: 專業領域關鍵字（給 Google 與 AI）, widget: list, required: false }
+          - name: categories
+            label: 案例分類
+            hint: 新增案例時可選的分類；每個分類對應一個服務頁
+            widget: list
+            summary: '{{fields.name}}'
+            fields:
+              - { name: name, label: 分類名稱, widget: string }
+              - { name: service, label: 對應服務頁, widget: relation, collection: services, value_field: '{{slug}}', search_fields: [title, shortTitle], display_fields: [shortTitle] }
+          - name: theme
+            label: 網站配色（色碼，例 #b08a3e）
+            widget: object
+            collapsed: true
+            fields:
+              - { name: primary, label: 主色（按鈕、重點）, widget: string, pattern: ['^#[0-9a-fA-F]{6}$', '請填 # 開頭的 6 碼色碼'] }
+              - { name: primaryDark, label: 主色（深，滑過時）, widget: string, pattern: ['^#[0-9a-fA-F]{6}$', '請填 # 開頭的 6 碼色碼'] }
+              - { name: ink, label: 文字／深色區塊, widget: string, pattern: ['^#[0-9a-fA-F]{6}$', '請填 # 開頭的 6 碼色碼'] }
+              - { name: paper, label: 淺底色, widget: string, pattern: ['^#[0-9a-fA-F]{6}$', '請填 # 開頭的 6 碼色碼'] }
+              - { name: accentLight, label: 首頁大圖上的小標題顏色, widget: string, required: false }
+          - { name: phone, label: 電話（顯示用）, widget: string }
+          - { name: phoneRaw, label: 電話（國際格式，例 +886912600950）, widget: string }
+          - { name: lineId, label: LINE ID, widget: string }
+          - { name: lineUrl, label: LINE 加好友網址, widget: string }
+          - { name: shopUrl, label: 線上商店網址（選填）, hint: '有網路商店時填，聯絡區塊和服務頁會出現購買按鈕', widget: string, required: false }
+          - { name: shopLabel, label: 線上商店按鈕文字（選填）, hint: '預設「線上下單」', widget: string, required: false }
+          - name: address
+            label: 地址
+            widget: object
+            fields:
+              - { name: street, label: 路段門牌, widget: string }
+              - { name: district, label: 行政區, widget: string }
+              - { name: city, label: 縣市, widget: string }
+              - { name: postalCode, label: 郵遞區號, widget: string }
+              - { name: full, label: 完整地址, widget: string }
+          - { name: mapUrl, label: Google 地圖連結, widget: string }
+          - name: geo
+            label: 座標（選填，於 Google 地圖右鍵複製）
+            widget: object
+            required: false
+            fields:
+              - { name: lat, label: 緯度, widget: number, value_type: float, required: false }
+              - { name: lng, label: 經度, widget: number, value_type: float, required: false }
+          - { name: areas, label: 服務區域, widget: list }
+          - { name: hours, label: 營業時間（選填）, widget: string, required: false }
+          - name: social
+            label: 社群帳號（填了網址，網站頁尾與聯絡頁就會出現圖示；沒填的不顯示）
+            widget: object
+            collapsed: false
+            fields:
+              - { name: facebook, label: Facebook 粉絲專頁, hint: '例：https://www.facebook.com/renovatehome', widget: string, required: false, pattern: ['^(https://.*)?$', '請貼完整網址（https:// 開頭）'] }
+              - { name: instagram, label: Instagram, hint: '例：https://www.instagram.com/帳號名稱', widget: string, required: false, pattern: ['^(https://.*)?$', '請貼完整網址（https:// 開頭）'] }
+              - { name: threads, label: Threads, hint: '例：https://www.threads.net/@帳號名稱', widget: string, required: false, pattern: ['^(https://.*)?$', '請貼完整網址（https:// 開頭）'] }
+              - { name: youtube, label: YouTube 頻道, hint: '例：https://www.youtube.com/@頻道名稱', widget: string, required: false, pattern: ['^(https://.*)?$', '請貼完整網址（https:// 開頭）'] }
+              - { name: tiktok, label: TikTok, hint: '例：https://www.tiktok.com/@帳號名稱', widget: string, required: false, pattern: ['^(https://.*)?$', '請貼完整網址（https:// 開頭）'] }
+              - { name: googleBusiness, label: Google 商家檔案（評論頁）, hint: '在 Google 地圖找到自己的商家 → 分享 → 複製連結', widget: string, required: false, pattern: ['^(https://.*)?$', '請貼完整網址（https:// 開頭）'] }
+          - name: tracking
+            label: 搜尋與流量追蹤（貼上代碼即生效）
+            widget: object
+            collapsed: false
+            fields:
+              - { name: googleVerification, label: Google Search Console 驗證碼, hint: 'Search Console 選「網址前置字元」→ 驗證方式選「HTML 標記」→ 只貼 content="……" 引號裡的那串', widget: string, required: false, pattern: ['^[A-Za-z0-9_\-]*$', '只貼 content 引號裡的代碼'] }
+              - { name: bingVerification, label: Bing 網站管理員驗證碼（ChatGPT 搜尋也參考 Bing）, hint: '驗證方式選「HTML Meta 標記」→ 只貼 content 引號裡的那串', widget: string, required: false, pattern: ['^[A-Za-z0-9]*$', '只貼 content 引號裡的代碼'] }
+              - { name: gtmId, label: GTM 容器 ID（Google 代碼管理工具）, hint: '格式 GTM-XXXXXXX。網站會推送自訂事件 line_click、phone_click 到 dataLayer，可在 GTM 設為觸發條件', widget: string, required: false, pattern: ['^(GTM-[A-Z0-9]+)?$', '格式為 GTM- 開頭'] }
+              - { name: ga4Id, label: GA4 評估 ID, hint: '格式 G-XXXXXXXXXX，會自動送 line_click、phone_click 事件。⚠ 若 GA4 已經在 GTM 裡設定，這格請留白，避免流量重複計算', widget: string, required: false, pattern: ['^(G-[A-Z0-9]+)?$', '格式為 G- 開頭'] }
+          - { name: logo, label: 橫式 Logo（頁首）, widget: image, choose_url: true }
+          - { name: logoStacked, label: 直式 Logo（頁尾，可留白）, widget: image, choose_url: true, required: false }
+          - { name: logoSquare, label: 方形 Logo（分頁圖示／Google 結構化資料）, widget: image, choose_url: true }
+          - { name: ogImage, label: 社群分享預設圖, widget: image, choose_url: true }
+          - { name: heroImages, label: 首頁主視覺, widget: list, field: { name: image, label: 圖片, widget: image, choose_url: true } }
+
+  # ───────── 網站文案 ─────────
+  - name: copy
+    label: 網站文案
+    files:
+      - name: pages
+        label: 各頁面標題與文字
+        file: src/data/pages.json
+        description: 文字中可用 {areas}（服務地區）、{phone}、{lineId}、{owner}、{address}、{brand}，會自動帶入公司資料。**粗體**、換行都可以用。
+        fields:
+          - name: labels
+            label: 選單與區塊名稱
+            widget: object
+            fields:
+              - { name: about, label: 關於我們, widget: string }
+              - { name: services, label: 服務項目, widget: string }
+              - { name: cases, label: 案例區名稱（例：裝潢實錄、搬家紀錄）, widget: string }
+              - { name: blog, label: 文章區名稱（例：裝潢小知識）, widget: string }
+              - { name: faq, label: 常見問題, widget: string }
+              - { name: contact, label: 聯絡我們, widget: string }
+              - { name: ctaNav, label: 右上角按鈕文字, widget: string }
+              - { name: location, label: 「施工地點」欄位名稱, widget: string }
+              - { name: caseMore, label: 案例卡片連結文字（例：看施工紀錄、看作品照片）, widget: string, required: false }
+              - { name: relatedCases, label: 服務頁案例區標題後綴（例：施工實錄、作品）, widget: string, required: false }
+              - { name: budget, label: 表單「預算區間」欄位名稱, widget: string, required: false }
+              - { name: signsTitle, label: 服務頁「徵兆」清單標題（例：出現這些狀況，就該注意了）, widget: string, required: false }
+          - name: home
+            label: 首頁
+            widget: object
+            collapsed: true
+            fields:
+              - { name: seoTitle, label: SEO 標題, widget: string }
+              - { name: seoDescription, label: SEO 描述, widget: text }
+              - { name: eyebrow, label: 大圖小標題, widget: string }
+              - { name: h1, label: 大標題（可換行）, widget: text }
+              - { name: lead, label: 大標題下方說明, widget: text }
+              - { name: heroAlt, label: 大圖說明, widget: string }
+              - { name: ctaPrimary, label: 主要按鈕, widget: string }
+              - { name: ctaSecondary, label: 次要按鈕, widget: string }
+              - { name: servicesTitle, label: 服務區標題, widget: string }
+              - { name: aboutTitle, label: 關於區標題, widget: text }
+              - { name: aboutText, label: 關於區內文（空一行＝分段）, widget: text }
+              - name: values
+                label: 三個特色
+                widget: list
+                fields: [{ name: title, label: 標題, widget: string }, { name: sub, label: 說明, widget: string }]
+              - { name: aboutButton, label: 關於區按鈕, widget: string }
+              - { name: aboutImage, label: 關於區圖片, widget: image, choose_url: true }
+              - { name: aboutImageAlt, label: 關於區圖片說明, widget: string }
+              - { name: audienceTitle, label: 適合對象標題, widget: text }
+              - name: audience
+                label: 適合對象
+                widget: list
+                fields: [{ name: icon, label: 圖示, widget: image, required: false, choose_url: true }, { name: title, label: 標題, widget: string }, { name: desc, label: 說明, widget: string }]
+              - { name: processTitle, label: 流程標題, widget: string }
+              - name: steps
+                label: 服務流程
+                widget: list
+                fields: [{ name: title, label: 步驟, widget: string }, { name: desc, label: 說明, widget: string }]
+              - { name: casesSub, label: 案例區副標, widget: string }
+              - { name: faqTitle, label: 常見問題標題, widget: string }
+              - { name: faqMore, label: 更多問題連結文字, widget: string }
+              - name: faqs
+                label: 首頁常見問題
+                widget: list
+                fields: [{ name: q, label: 問題, widget: string }, { name: a, label: 回答, widget: text }]
+          - name: about
+            label: 關於我們頁
+            widget: object
+            collapsed: true
+            fields:
+              - { name: seoTitle, label: SEO 標題, widget: string }
+              - { name: seoDescription, label: SEO 描述, widget: text }
+              - { name: heroImage, label: 頁首圖片, widget: image, choose_url: true }
+              - { name: intro, label: 頁首副標, widget: string }
+              - { name: answerLabel, label: 摘要框標題, widget: string }
+              - { name: body1, label: 第一段內容, widget: markdown }
+              - { name: image, label: 配圖, widget: image, choose_url: true }
+              - { name: imageAlt, label: 配圖說明, widget: string }
+              - { name: body2, label: 第二段內容, widget: markdown }
+          - name: services
+            label: 服務列表頁
+            widget: object
+            collapsed: true
+            fields:
+              - { name: seoTitle, label: SEO 標題, widget: string }
+              - { name: seoDescription, label: SEO 描述, widget: text }
+              - { name: intro, label: 頁首說明, widget: text }
+              - { name: sideTitle, label: 服務頁側欄標題, widget: string }
+              - { name: sideText, label: 服務頁側欄說明, widget: string }
+          - name: cases
+            label: 案例列表頁
+            widget: object
+            collapsed: true
+            fields:
+              - { name: seoTitle, label: SEO 標題, widget: string }
+              - { name: seoDescription, label: SEO 描述, widget: text }
+              - { name: intro, label: 頁首說明, widget: text }
+              - { name: ctaTitle, label: 底部標題, widget: string }
+              - { name: ctaText, label: 底部說明, widget: string }
+              - { name: sideTitle, label: 案例頁側欄標題, widget: string }
+          - name: blog
+            label: 文章列表頁
+            widget: object
+            collapsed: true
+            fields:
+              - { name: seoTitle, label: SEO 標題, widget: string }
+              - { name: seoDescription, label: SEO 描述, widget: text }
+              - { name: intro, label: 頁首說明, widget: text }
+              - { name: sideTitle, label: 文章側欄標題, widget: string }
+              - { name: sideText, label: 文章側欄說明, widget: string }
+          - name: faq
+            label: 常見問題頁
+            widget: object
+            collapsed: true
+            fields:
+              - { name: seoTitle, label: SEO 標題, widget: string }
+              - { name: seoDescription, label: SEO 描述, widget: text }
+              - { name: title, label: 頁面標題, widget: string }
+              - { name: intro, label: 頁首說明, widget: text }
+          - name: contact
+            label: 聯絡頁與表單
+            widget: object
+            collapsed: true
+            fields:
+              - { name: seoTitle, label: SEO 標題, widget: string }
+              - { name: seoDescription, label: SEO 描述, widget: text }
+              - { name: intro, label: 頁首說明, widget: text }
+              - { name: formTitle, label: 表單標題, widget: string }
+              - { name: formNote, label: 表單說明, widget: string }
+              - { name: followTitle, label: 社群區標題, widget: string }
+              - { name: areaPlaceholder, label: 地點欄位提示, widget: string }
+              - { name: conditionLabel, label: 第二個下拉選單名稱（例：屋況、搬家類型）, widget: string }
+              - { name: conditionOptions, label: 第二個下拉選單選項, widget: list }
+              - { name: budgetOptions, label: 預算選項, widget: list }
+              - { name: messagePlaceholder, label: 需求說明提示, widget: string }
+              - { name: lineGreeting, label: LINE 訊息開頭, widget: string }
+          - name: thanks
+            label: 送出後感謝頁
+            widget: object
+            collapsed: true
+            fields: [{ name: text, label: 感謝文字, widget: string }]
+          - name: cta
+            label: 各頁底部聯絡區
+            widget: object
+            collapsed: true
+            fields: [{ name: title, label: 標題, widget: string }, { name: text, label: 說明, widget: string }]

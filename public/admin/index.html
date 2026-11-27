@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="robots" content="noindex" />
+  <title>網站後台</title>
+  <style>
+    /* 手機版：讓後台表單縮到螢幕寬度，按鈕可換行 */
+    @media (max-width: 820px) {
+      [class*="EditorContainer"], [class*="ToolbarContainer"], [class*="AppHeaderContent"],
+      [class*="AppMainContainer"], [class*="CollectionContainer"] { min-width: 0 !important; }
+      [class*="ToolbarContainer"] { height: auto !important; flex-wrap: wrap; padding: 6px 0; }
+      [class*="ToolbarSectionMain"] { flex-wrap: wrap; gap: 6px; padding: 0 8px !important; }
+      [class*="ToolbarSectionBackLink"] { padding: 0 8px !important; }
+      [class*="ToolbarSectionMeta"] { display: none !important; }
+      [class*="ControlPaneContainer"] { padding: 0 12px !important; }
+      [class*="EditorContainer"] { padding-top: 0 !important; }
+      [class*="ControlPaneContainer"] { padding-top: 64px !important; }
+      [class*="AppHeaderContent"] { flex-wrap: wrap; }
+      [class*="SidebarContainer"] { width: 100% !important; position: static !important; }
+      [class*="CollectionContainer"] { flex-direction: column; margin: 0 !important; padding: 0 8px !important; }
+      [class*="CollectionMain"] { padding-left: 0 !important; }
+    }
+  </style>
+</head>
+<body>
+  <script>window.CMS_MANUAL_INIT = true;</script>
+  <script src="https://unpkg.com/decap-cms@^3.6.0/dist/decap-cms.js"></script>
+  <script src="/admin/seo-helper.js"></script>
+  <script>
+    // 登入服務跟著目前網域走（換成正式網域後不用改設定）
+    // GitHub repo 優先讀 Cloudflare 環境變數 GITHUB_REPO（新客戶建站免改程式）
+    fetch('/site-config.json', { cache: 'no-store' }).then((r) => r.json()).catch(() => ({})).then((c) => {
+      const backend = { base_url: location.origin, auth_endpoint: 'api/auth' };
+      if (c && /^[\w.-]+\/[\w.-]+$/.test(c.repo || '')) backend.repo = c.repo;
+      CMS.init({ config: { backend } });
+    });
+
+    // 在後台上方選單（內容／媒體）旁加入「批次工具」
+    new MutationObserver(() => {
+      const first = document.querySelector('header nav li a[href="#/"]');
+      if (!first || document.getElementById('nav-batch')) return;
+      const ul = first.closest('ul');
+      const li = document.createElement('li');
+      const a = document.createElement('a');
+      a.id = 'nav-batch';
+      a.href = '/admin/batch.html';
+      a.className = first.className.replace(/\bactive\b/g, '');
+      a.innerHTML = '<span style="font-size:16px;margin-right:4px">⇪</span>批次工具';
+      a.style.cssText = 'color:#8c6c2c;font-weight:700';
+      li.appendChild(a);
+      ul.appendChild(li);
+      // 網站健檢（顯示最近一次的總分）
+      const li0 = li.cloneNode(true), a0 = li0.querySelector('a');
+      a0.id = 'nav-health'; a0.href = '/admin/batch.html#report';
+      let badge = '';
+      try {
+        const h = JSON.parse(localStorage.getItem('fzj-health') || 'null');
+        if (h) { const c = h.total >= 80 ? '#2f7d4f' : h.total >= 55 ? '#b7791f' : '#b3261e'; badge = '<span style="margin-left:6px;background:' + c + ';color:#fff;border-radius:99px;padding:1px 8px;font-size:12px">' + h.total + ' 分</span>'; }
+      } catch (e) {}
+      a0.innerHTML = '<span style="font-size:15px;margin-right:4px">📊</span>網站健檢' + badge;
+      ul.insertBefore(li0, li);
+      const li2 = li.cloneNode(true), a2 = li2.querySelector('a');
+      a2.id = 'nav-users'; a2.href = '/admin/batch.html#users';
+      a2.innerHTML = '<span style="font-size:15px;margin-right:4px">👤</span>帳號權限';
+      ul.appendChild(li2);
+    }).observe(document.body, { childList: true, subtree: true });
+
+    // 網站轉移給新擁有者後，提醒到「帳號權限」一鍵更新設定
+    (async () => {
+      try {
+        const token = JSON.parse(localStorage.getItem('decap-cms-user') || '{}').token;
+        if (!token) return;
+        const cfg = await fetch('/admin/config.yml', { cache: 'no-store' }).then((r) => r.text());
+        const sc = await fetch('/site-config.json', { cache: 'no-store' }).then((r) => r.json()).catch(() => ({}));
+        const repo = sc.repo || (cfg.match(/^\s*repo:\s*(\S+)/m) || [])[1];
+        const r = await fetch('https://api.github.com/repos/' + repo, { headers: { Authorization: 'token ' + token } });
+        const info = r.ok ? await r.json() : null;
+        if (info && info.full_name.toLowerCase() !== repo.toLowerCase()) {
+          const bar = document.createElement('div');
+          bar.style.cssText = 'position:fixed;left:0;right:0;bottom:0;z-index:9999;background:#fff3cd;border-top:1px solid #e6c34a;padding:12px 16px;font:15px system-ui,sans-serif;text-align:center';
+          bar.innerHTML = '網站已轉移到 <b>' + info.full_name.replace(/[<>&]/g, '') + '</b>，請按 <a href="/admin/batch.html#users" style="color:#8c6c2c;font-weight:700">這裡</a> 一鍵更新設定。';
+          document.body.appendChild(bar);
+        }
+      } catch (e) {}
+    })();
+  </script>
+</body>
+</html>

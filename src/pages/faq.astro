@@ -1,0 +1,29 @@
+---
+import Base from '../layouts/Base.astro';
+import Crumbs from '../components/Crumbs.astro';
+import CtaBand from '../components/CtaBand.astro';
+import Faq from '../components/Faq.astro';
+import { breadcrumb, faqSchema } from '../lib/schema';
+import { getCollection } from 'astro:content';
+const services = (await getCollection('services', (s) => !s.data.draft)).sort((a, b) => a.data.order - b.data.order);
+const base = Astro.site!.toString();
+const crumbs = [{ name: '首頁', path: '/' }, { name: pages.labels.faq, path: '/faq/' }];
+const all = services.flatMap((s) => s.data.faqs);
+import pages from '../data/pages.json';
+import { fill, rich, md } from '../lib/text';
+---
+<Base title={fill(pages.faq.seoTitle)} description={fill(pages.faq.seoDescription)} schema={[breadcrumb(base, crumbs), faqSchema(all)]}>
+  <section class="page-hero"><div class="wrap"><Crumbs items={crumbs} /><h1>{fill(pages.faq.title)}</h1><p>{fill(pages.faq.intro)}</p>
+    <div class="filters" style="margin:16px 0 0">{services.map((s) => <a href={`#${s.id}`}>{s.data.shortTitle}</a>)}</div>
+  </div></section>
+  <section class="block"><div class="wrap narrow">
+    {services.map((s) => (
+      <div id={s.id} style="margin-bottom:56px;scroll-margin-top:90px">
+        <h2>{s.data.shortTitle}</h2>
+        <Faq faqs={s.data.faqs} />
+        <p style="margin-top:12px"><a href={`/services/${s.id}/`}>了解{s.data.shortTitle}服務 →</a></p>
+      </div>
+    ))}
+  </div></section>
+  <CtaBand />
+</Base>

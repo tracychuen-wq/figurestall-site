@@ -1,0 +1,16 @@
+---
+import { img } from '../lib/img';
+import pages from '../data/pages.json';
+const L: any = pages.labels;
+interface Props { c: any }
+const { c } = Astro.props;
+---
+<a class="card" href={`/cases/${c.id}/`}>
+  <div class="thumb"><img src={img(c.data.cover, 'lg')} alt={c.data.title} loading="lazy" width="800" height="600" /></div>
+  <div class="body">
+    <span class="tag">{c.data.category}</span>
+    <h3>{c.data.title.split('｜')[0]}</h3>
+    <p>{c.data.summary}</p>
+    <span class="more">{L.caseMore || '看施工紀錄'}（{c.data.photos.length} 張）→</span>
+  </div>
+</a>

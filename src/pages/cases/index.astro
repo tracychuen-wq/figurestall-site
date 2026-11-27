@@ -1,0 +1,37 @@
+---
+import Base from '../../layouts/Base.astro';
+import Crumbs from '../../components/Crumbs.astro';
+import CtaBand from '../../components/CtaBand.astro';
+import CaseCard from '../../components/CaseCard.astro';
+import { breadcrumb } from '../../lib/schema';
+import { getCollection } from 'astro:content';
+const cases = (await getCollection('cases', (c) => !c.data.draft)).sort((a, b) => +b.data.date - +a.data.date);
+const cats = [...new Set(cases.map((c) => c.data.category))];
+const base = Astro.site!.toString();
+const crumbs = [{ name: '首頁', path: '/' }, { name: pages.labels.cases, path: '/cases/' }];
+import pages from '../../data/pages.json';
+import { fill, rich, md } from '../../lib/text';
+---
+<Base title={fill(pages.cases.seoTitle)} description={fill(pages.cases.seoDescription)} schema={[breadcrumb(base, crumbs)]}>
+  <section class="page-hero"><div class="wrap"><Crumbs items={crumbs} /><h1>{pages.labels.cases}</h1><p>{fill(pages.cases.intro)}</p></div></section>
+  <section class="block"><div class="wrap">
+    <div class="filters" role="tablist">
+      <a href="#all" data-f="all" aria-current="true">全部</a>
+      {cats.map((c) => <a href={`#${c}`} data-f={c}>{c}</a>)}
+    </div>
+    <div class="grid g3" id="case-grid">
+      {cases.map((c) => <div data-cat={c.data.category}><CaseCard c={c} /></div>)}
+    </div>
+  </div></section>
+  <CtaBand title={fill(pages.cases.ctaTitle)} text={fill(pages.cases.ctaText)} />
+</Base>
+<script>
+  const btns = document.querySelectorAll<HTMLAnchorElement>('.filters a');
+  const items = document.querySelectorAll<HTMLElement>('#case-grid > div');
+  const apply = (f: string) => {
+    btns.forEach((b) => b.toggleAttribute('aria-current', b.dataset.f === f));
+    items.forEach((it) => (it.style.display = f === 'all' || it.dataset.cat === f ? '' : 'none'));
+  };
+  btns.forEach((b) => b.addEventListener('click', (e) => { e.preventDefault(); apply(b.dataset.f!); history.replaceState(null, '', '#' + b.dataset.f); }));
+  const h = decodeURIComponent(location.hash.slice(1)); if (h) apply(h);
+</script>

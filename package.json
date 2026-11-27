@@ -1,0 +1,17 @@
+{
+  "name": "renovate-home",
+  "type": "module",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "localize-images": "node scripts/localize-images.mjs"
+  },
+  "dependencies": {
+    "@astrojs/sitemap": "^3.7.6",
+    "astro": "^7.4.13",
+    "marked": "^18.3.0"
+  }
+}

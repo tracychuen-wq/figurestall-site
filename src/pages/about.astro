@@ -1,0 +1,37 @@
+---
+import Base from '../layouts/Base.astro';
+import Crumbs from '../components/Crumbs.astro';
+import CtaBand from '../components/CtaBand.astro';
+import site from '../data/site.json';
+import { img } from '../lib/img';
+import { breadcrumb } from '../lib/schema';
+const base = Astro.site!.toString();
+const crumbs = [{ name: '首頁', path: '/' }, { name: pages.labels.about, path: '/about/' }];
+const A = pages.about;
+const person = { '@context': 'https://schema.org', '@type': 'Person', name: site.ownerName, alternateName: site.ownerNick, jobTitle: `${site.brandShort} ${site.ownerTitle}`, worksFor: { '@id': base + '#business' }, knowsAbout: site.knowsAbout.slice(0, 4) };
+import pages from '../data/pages.json';
+import { fill, rich, md } from '../lib/text';
+---
+<Base title={fill(A.seoTitle)} description={fill(A.seoDescription)} schema={[breadcrumb(base, crumbs), person]}>
+  <section class="page-hero has-img">
+    <img src={img(A.heroImage, 'full')} alt="" width="1920" height="600" />
+    <div class="wrap"><Crumbs items={crumbs} /><h1>{pages.labels.about}</h1><p>{fill(A.intro)}</p></div>
+  </section>
+
+  <section class="block">
+    <div class="wrap split">
+      <div class="prose">
+        <div class="answer-box"><strong class="lbl">{A.answerLabel}</strong>{site.description}</div>
+        <Fragment set:html={md(A.body1)} />
+      </div>
+      <img src={img(A.image, 'lg')} alt={A.imageAlt} loading="lazy" width="800" height="600" />
+    </div>
+  </section>
+
+  <section class="block alt">
+    <div class="wrap narrow prose">
+      <Fragment set:html={md(A.body2)} />
+    </div>
+  </section>
+  <CtaBand />
+</Base>

@@ -1,0 +1,68 @@
+---
+import Base from '../../layouts/Base.astro';
+import Crumbs from '../../components/Crumbs.astro';
+import CtaBand from '../../components/CtaBand.astro';
+import Faq from '../../components/Faq.astro';
+import CaseCard from '../../components/CaseCard.astro';
+import site from '../../data/site.json';
+import { img } from '../../lib/img';
+import { breadcrumb, faqSchema } from '../../lib/schema';
+import { getCollection, render } from 'astro:content';
+
+export async function getStaticPaths() {
+  const services = await getCollection('services', (s) => !s.data.draft);
+  return services.map((s) => ({ params: { slug: s.id }, props: { s } }));
+}
+const { s } = Astro.props;
+const { Content } = await render(s);
+const d = s.data;
+const base = Astro.site!.toString();
+const url = new URL(`/services/${s.id}/`, base).toString();
+const related = (await getCollection('cases', (c) => !c.data.draft && c.data.service === s.id)).sort((a, b) => +b.data.date - +a.data.date);
+const others = (await getCollection('services', (x) => !x.data.draft && x.id !== s.id)).sort((a, b) => a.data.order - b.data.order);
+const crumbs = [{ name: '首頁', path: '/' }, { name: pages.labels.services, path: '/services/' }, { name: d.shortTitle, path: `/services/${s.id}/` }];
+const service = { '@context': 'https://schema.org', '@type': 'Service', name: d.title, serviceType: d.shortTitle, description: d.answer, url, image: img(d.cover), provider: { '@id': base + '#business' }, areaServed: site.areas };
+import pages from '../../data/pages.json';
+import { fill, rich, md } from '../../lib/text';
+---
+<Base title={d.seoTitle || d.title} description={d.seoDescription || d.summary} image={d.cover} schema={[breadcrumb(base, crumbs), service, ...(d.faqs.length ? [faqSchema(d.faqs)] : [])]}>
+  <section class="page-hero has-img">
+    <img src={img(d.cover, 'full')} alt="" width="1920" height="600" />
+    <div class="wrap"><Crumbs items={crumbs} /><h1>{d.title}</h1><p>{d.summary}</p></div>
+  </section>
+  <section class="block"><div class="wrap layout-side">
+    <div>
+      <div class="answer-box"><strong class="lbl">簡單說</strong>{d.answer}</div>
+      {d.signs.length > 0 && (<>
+        <h2>{(pages.labels as any).signsTitle || '出現這些狀況，就該注意了'}</h2>
+        <ul class="signs">{d.signs.map((x) => <li>{x}</li>)}</ul>
+      </>)}
+      <div class="prose"><Content /></div>
+      {d.faqs.length > 0 && (<>
+        <h2 style="margin-top:48px">{d.shortTitle}常見問題 Q&amp;A</h2>
+        <Faq faqs={d.faqs} open />
+      </>)}
+      {d.updated && <p class="meta" style="margin-top:24px">最後更新：<time datetime={d.updated.toISOString().slice(0,10)}>{d.updated.toISOString().slice(0,10)}</time></p>}
+    </div>
+    <aside>
+      <div class="side-card">
+        <h2>{fill(pages.services.sideTitle)}</h2>
+        <p class="muted">{fill(pages.services.sideText)}</p>
+        <a class="btn btn-line" href={site.lineUrl} target="_blank" rel="noopener">LINE {site.lineId}</a>
+        <a class="btn btn-gold" href={`tel:${site.phoneRaw}`}>{site.phone}</a>
+        {((d as any).shopUrl || (site as any).shopUrl) && <a class="btn btn-ghost" href={(d as any).shopUrl || (site as any).shopUrl} target="_blank" rel="noopener">{(site as any).shopLabel || '線上下單'}</a>}
+      </div>
+      <div class="side-card">
+        <h2>其他服務</h2>
+        <ul class="plain">{others.map((o) => <li style="margin:6px 0"><a href={`/services/${o.id}/`}>{o.data.shortTitle}</a></li>)}</ul>
+      </div>
+    </aside>
+  </div></section>
+  {related.length > 0 && (
+    <section class="block alt"><div class="wrap">
+      <h2>{d.shortTitle}{(pages.labels as any).relatedCases || '施工實錄'}</h2>
+      <div class="grid g3">{related.map((c) => <CaseCard c={c} />)}</div>
+    </div></section>
+  )}
+  <CtaBand />
+</Base>

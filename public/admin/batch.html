@@ -1,0 +1,796 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="robots" content="noindex" />
+<title>批次工具</title>
+<script src="https://cdn.jsdelivr.net/npm/js-yaml@4.1.0/dist/js-yaml.min.js"></script>
+<script src="/admin/seo-helper.js"></script>
+<style>
+  :root { --ink:#2b2622; --muted:#74695e; --line:#e2d8c7; --paper:#f7f3ec; --gold:#b08a3e; --gold-d:#8c6c2c; --ok:#2f7d4f; --err:#b3261e; }
+  * { box-sizing: border-box; min-width: 0; }
+  body { margin: 0; font: 15px/1.6 'Noto Sans TC','PingFang TC','Microsoft JhengHei',system-ui,sans-serif; color: var(--ink); background: #faf8f4; }
+  header { background: var(--ink); color: #fff; padding: 12px 16px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; position: sticky; top: 0; z-index: 10; }
+  header h1 { font-size: 17px; margin: 0; flex: 1; }
+  header a { color: #e7c98a; text-decoration: none; font-size: 14px; }
+  nav.tabs { display: flex; gap: 4px; padding: 10px 12px 0; overflow-x: auto; background: #fff; border-bottom: 1px solid var(--line); }
+  nav.tabs button { flex: none; border: 0; background: none; padding: 10px 14px; font: inherit; font-weight: 700; color: var(--muted); border-bottom: 3px solid transparent; cursor: pointer; }
+  nav.tabs button[aria-selected=true] { color: var(--ink); border-color: var(--gold); }
+  main { max-width: 1100px; margin: 0 auto; padding: 18px 14px 120px; }
+  section[hidden], [hidden] { display: none !important; }
+  .card { background: #fff; border: 1px solid var(--line); border-radius: 8px; padding: 16px; margin-bottom: 16px; }
+  .hint { color: var(--muted); font-size: 13px; margin: 4px 0 0; }
+  label { font-weight: 700; font-size: 14px; display: block; margin: 12px 0 4px; }
+  input, select, textarea { width: 100%; font: inherit; font-size: 16px; padding: 9px 10px; border: 1px solid var(--line); border-radius: 6px; background: #fff; }
+  textarea { min-height: 90px; }
+  .row { display: grid; grid-template-columns: 1fr 1fr; gap: 0 14px; }
+  @media (max-width: 640px) { .row { grid-template-columns: 1fr; } }
+  .btn { display: inline-flex; align-items: center; gap: 6px; border: 0; border-radius: 6px; padding: 11px 18px; font: inherit; font-weight: 700; cursor: pointer; background: var(--gold); color: #fff; min-height: 44px; }
+  .btn:hover { background: var(--gold-d); }
+  .btn.ghost { background: #fff; color: var(--ink); border: 1px solid var(--line); }
+  .btn:disabled { opacity: .5; cursor: not-allowed; }
+  .thumbs { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 8px; margin-top: 10px; }
+  .thumbs figure { margin: 0; position: relative; }
+  .thumbs img { width: 100%; aspect-ratio: 4/3; object-fit: cover; border-radius: 4px; display: block; background: var(--paper); }
+  .thumbs input { font-size: 12px; padding: 4px 6px; margin-top: 4px; }
+  .thumbs button { position: absolute; top: 4px; right: 4px; width: 26px; height: 26px; border-radius: 50%; border: 0; background: rgba(0,0,0,.6); color: #fff; cursor: pointer; }
+  .status { position: fixed; left: 50%; bottom: 18px; transform: translateX(-50%); background: var(--ink); color: #fff; padding: 10px 18px; border-radius: 99px; font-size: 14px; display: none; z-index: 20; max-width: 92vw; text-align: center; }
+  .status.show { display: block; } .status.ok { background: var(--ok); } .status.err { background: var(--err); }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th, td { border-bottom: 1px solid var(--line); padding: 8px 6px; text-align: left; vertical-align: middle; }
+  th { background: var(--paper); }
+  td input, td select { font-size: 14px; padding: 6px 8px; }
+  td.c, th.c { text-align: center; width: 52px; }
+  tr.changed td { background: #fff8e6; }
+  .scroll { overflow-x: auto; }
+  .bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 10px 0; }
+  .bar select, .bar input { width: auto; }
+  .pill { display: inline-block; font-size: 12px; padding: 2px 8px; border-radius: 99px; background: var(--paper); }
+  .pill.draft { background: #fdecea; color: var(--err); } .pill.live { background: #e7f4ec; color: var(--ok); }
+  pre.preview { background: var(--paper); padding: 10px; border-radius: 6px; font-size: 13px; white-space: pre-wrap; max-height: 260px; overflow: auto; }
+  .scores { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-bottom: 16px; }
+  .score { background: #fff; border: 1px solid var(--line); border-radius: 10px; padding: 16px; text-align: center; }
+  .score .ring { --p: 0; --c: var(--ok); width: 110px; height: 110px; margin: 0 auto 8px; border-radius: 50%; display: grid; place-items: center; background: conic-gradient(var(--c) calc(var(--p) * 1%), #eee7db 0); }
+  .score .ring b { width: 86px; height: 86px; border-radius: 50%; background: #fff; display: grid; place-items: center; font-size: 30px; }
+  .score h3 { margin: 0; font-size: 16px; } .score p { margin: 4px 0 0; font-size: 13px; color: var(--muted); }
+  .score.main .ring { width: 130px; height: 130px; } .score.main .ring b { width: 102px; height: 102px; font-size: 36px; }
+  @media (max-width: 640px) { .scores { grid-template-columns: 1fr; } }
+  .bars div { display: grid; grid-template-columns: 110px 1fr 46px; gap: 10px; align-items: center; margin: 8px 0; font-size: 14px; }
+  .bars i { display: block; height: 10px; border-radius: 99px; background: #eee7db; overflow: hidden; } .bars i span { display: block; height: 100%; border-radius: 99px; }
+  .issues li { display: flex; gap: 10px; align-items: flex-start; padding: 8px 0; border-bottom: 1px solid var(--line); list-style: none; }
+  .issues .n { flex: none; min-width: 42px; text-align: center; font-weight: 700; border-radius: 99px; padding: 1px 8px; color: #fff; font-size: 13px; }
+  .tag { display: inline-block; font-size: 11px; padding: 1px 7px; border-radius: 4px; background: var(--paper); color: var(--muted); margin-right: 4px; }
+  #login { text-align: center; padding: 60px 20px; }
+  @media (max-width: 640px) {
+    .stack thead { display: none; }
+    .stack tr { display: grid; grid-template-columns: 40px 1fr; gap: 4px 8px; padding: 10px 0; border-bottom: 1px solid var(--line); }
+    .stack td { border: 0; padding: 2px 0; }
+    .stack td.c { grid-row: span 6; }
+    .stack td[data-l]::before { content: attr(data-l); display: block; font-size: 12px; color: var(--muted); }
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>批次工具</h1>
+  <a href="/admin/">← 回後台</a>
+  <a href="/" target="_blank">看網站 ↗</a>
+</header>
+
+<div id="login" hidden>
+  <h2>請先登入後台</h2>
+  <p class="hint">批次工具和後台共用同一個 GitHub 登入。</p>
+  <p><a class="btn" href="/admin/">前往後台登入</a></p>
+  <p class="hint">登入後再回到這一頁（/admin/batch.html）。</p>
+</div>
+
+<div id="moved" hidden style="background:#fff3cd;border-bottom:1px solid #e6c34a;padding:12px 16px;display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+  <span style="flex:1">偵測到網站已轉移到 <strong id="moved-to"></strong>，需要更新後台設定才能繼續上架。</span>
+  <button class="btn" id="moved-fix">一鍵更新設定</button>
+</div>
+<div id="app" hidden>
+  <nav class="tabs" role="tablist">
+    <button role="tab" data-tab="report">📊 SEO／GEO 健檢</button>
+    <button role="tab" data-tab="photos" aria-selected="true">① 多張照片上架</button>
+    <button role="tab" data-tab="import">② 匯入多個案例</button>
+    <button role="tab" data-tab="edit">③ 批次修改／發布</button>
+    <button role="tab" data-tab="users">④ 帳號權限</button>
+  </nav>
+  <main>
+    <!-- 📊 SEO／GEO 健檢 -->
+    <section data-panel="report" hidden>
+      <div id="r-body"><div class="card"><p class="hint">分析全站內容中…</p></div></div>
+    </section>
+
+    <!-- ① 多張照片上架 -->
+    <section data-panel="photos">
+      <div class="card">
+        <label for="p-target">要放到哪個案例？</label>
+        <select id="p-target"><option value="__new">＋ 新增一個案例</option></select>
+        <p class="hint">選既有案例＝把照片加到那個案例後面；選「新增」＝建立新案例。</p>
+        <div id="p-newfields">
+          <label for="p-title">案例標題</label>
+          <input id="p-title" placeholder="例：地區＋工程類型＋特色（例：北屯 30 年透天翻新｜水電重拉）" />
+          <div class="row">
+            <div><label for="p-slug">網址代稱（英文小寫與 -）</label><input id="p-slug" placeholder="beitun-old-house" pattern="[a-z0-9-]+" /></div>
+            <div><label for="p-date">完工／紀錄日期</label><input id="p-date" type="date" /></div>
+          </div>
+          <div class="row">
+            <div><label for="p-cat">案例分類</label><select id="p-cat"></select></div>
+            <div><label for="p-svc">對應的服務頁</label><select id="p-svc"></select></div>
+          </div>
+          <label for="p-loc">施工地點（選填）</label>
+          <input id="p-loc" placeholder="例：○○市○○區" />
+          <label for="p-sum">案例摘要（1～2 句）</label>
+          <textarea id="p-sum" placeholder="30 年透天全室翻新，重拉水電、浴室重做防水。"></textarea>
+          <label><input type="checkbox" id="p-draft" style="width:auto"> 先存成草稿（不上線）</label>
+        </div>
+      </div>
+      <div class="card">
+        <label for="p-files">選擇照片（可一次選很多張）</label>
+        <input id="p-files" type="file" accept="image/*" multiple />
+        <p class="hint">手機可直接從相簿多選。照片會自動縮小到 1600px、壓縮後再上傳，不用先處理。第一張會當封面。</p>
+        <label for="p-altall">統一照片說明（選填，可再個別修改）</label>
+        <input id="p-altall" placeholder="例：浴室防水施工" />
+        <div class="thumbs" id="p-thumbs"></div>
+      </div>
+      <button class="btn" id="p-submit">上傳並發布</button>
+    </section>
+
+    <!-- ② 匯入多個案例 -->
+    <section data-panel="import" hidden>
+      <div class="card">
+        <p style="margin-top:0"><strong>做法：</strong>在 Excel 或 Google 試算表照範本欄位填好 → 全選複製 → 貼到下面。也可以上傳 .csv 檔。</p>
+        <div class="bar">
+          <select id="i-type"><option value="cases">匯入：裝潢實錄（案例）</option><option value="blog">匯入：裝潢小知識（文章）</option></select>
+          <button class="btn ghost" id="i-tpl">下載範本 CSV</button>
+          <input type="file" id="i-file" accept=".csv,text/csv" style="width:auto" />
+        </div>
+        <p class="hint" id="i-cols"></p>
+        <textarea id="i-text" style="min-height:160px" placeholder="從試算表複製貼上（含第一列標題）"></textarea>
+        <div id="i-photobox">
+          <label for="i-photos">一起匯入照片（選填，可一次全選）</label>
+          <input id="i-photos" type="file" accept="image/*" multiple />
+          <p class="hint">照片檔名＝<strong>案例名稱＋編號</strong>，例如「北屯30年透天老屋翻新-01.jpg」。案例名稱可用：標題「｜」前面那段、完整標題、或 CSV 的「照片名稱」欄（標題太長時建議填短名，例：北屯透天-01.jpg）。編號決定照片順序，第 1 張當封面。</p>
+          <p class="hint" id="i-photocount"></p>
+        </div>
+        <div class="bar"><button class="btn ghost" id="i-parse">檢查資料</button></div>
+        <div id="i-result"></div>
+      </div>
+      <button class="btn" id="i-submit" disabled>全部匯入並發布</button>
+      <p class="hint">照片可以先匯入文字，之後再用「① 多張照片上架」選擇該案例補上照片。</p>
+    </section>
+
+    <!-- ③ 批次修改／發布 -->
+    <section data-panel="edit" hidden>
+      <div class="card">
+        <div class="bar">
+          <select id="e-type"><option value="cases">裝潢實錄</option><option value="blog">裝潢小知識</option></select>
+          <button class="btn ghost" id="e-reload">重新載入</button>
+          <span class="hint" id="e-count"></span>
+        </div>
+        <div class="bar">
+          <strong>勾選的項目：</strong>
+          <button class="btn ghost" data-bulk="publish">設為發布</button>
+          <button class="btn ghost" data-bulk="draft">設為草稿</button>
+          <button class="btn ghost" data-bulk="feature" data-only="cases">放首頁精選</button>
+          <button class="btn ghost" data-bulk="unfeature" data-only="cases">取消精選</button>
+          <select id="e-bulkcat" data-only="cases"><option value="">改分類為…</option></select>
+          <input id="e-bulkloc" data-only="cases" placeholder="地點改為…（按 Enter）" style="width:180px" />
+        </div>
+        <div class="scroll"><table class="stack" id="e-table"></table></div>
+      </div>
+      <button class="btn" id="e-submit" disabled>儲存所有變更（0）</button>
+    </section>
+    <!-- ④ 帳號權限 -->
+    <section data-panel="users" hidden>
+      <div class="card" style="border-color:var(--gold)">
+        <h2 style="margin:0 0 6px;font-size:18px">網站擁有者</h2>
+        <p style="margin:0">目前網站存放在：<strong id="o-repo">…</strong>（擁有者：<strong id="o-owner">…</strong>）</p>
+        <details style="margin-top:10px">
+          <summary style="cursor:pointer;font-weight:700;color:var(--gold-d)">如何把網站交給別人？（3 步驟）</summary>
+          <ol style="margin:10px 0 0;padding-left:1.3em">
+            <li>請新擁有者註冊 GitHub 帳號，並把帳號名稱給你。</li>
+            <li>按下方按鈕到 GitHub，拉到最下方紅色區塊按 <strong>Transfer ownership</strong>，輸入新擁有者帳號。新擁有者在 Email 按接受。</li>
+            <li>回到這一頁，系統會自動偵測網站已轉移，按「一鍵更新設定」就完成。</li>
+          </ol>
+          <p class="bar"><a class="btn ghost" id="o-transfer" target="_blank" rel="noopener">前往 GitHub 轉移 ↗</a></p>
+          <p class="hint">主機（Cloudflare）與網域的交接方式，請參考說明文件 README「三、轉移擁有者」。</p>
+        </details>
+      </div>
+      <div class="card">
+        <h2 style="margin:0 0 6px;font-size:18px">新增可以登入後台的人</h2>
+        <p class="hint" style="margin:0 0 6px">對方要先有免費 GitHub 帳號（<a href="https://github.com/signup" target="_blank" rel="noopener">github.com/signup</a>）。輸入他的 GitHub 帳號名稱，系統會寄邀請信給他，他按「接受」後就能用 GitHub 登入後台。</p>
+        <div class="bar">
+          <input id="u-name" placeholder="GitHub 帳號名稱，例：abiao-fzj" autocomplete="off" style="flex:1;min-width:200px" />
+          <button class="btn" id="u-add">送出邀請</button>
+        </div>
+        <div id="u-check" class="hint"></div>
+      </div>
+      <div class="card">
+        <div class="bar" style="margin-top:0"><h2 style="margin:0;font-size:18px;flex:1">目前有權限的人</h2><button class="btn ghost" id="u-reload">重新整理</button></div>
+        <div id="u-list"><p class="hint">讀取中…</p></div>
+      </div>
+      <div class="card">
+        <h2 style="margin:0 0 6px;font-size:18px">等待接受的邀請</h2>
+        <div id="u-inv"><p class="hint">讀取中…</p></div>
+        <p class="hint">邀請 7 天內沒接受會自動失效，可以重新邀請。</p>
+      </div>
+    </section>
+  </main>
+</div>
+<div class="status" id="status"></div>
+
+<script>
+{
+let REPO = 'OWNER/REPO', BRANCH = 'main';
+const API = 'https://api.github.com';
+let CONFIG_REPO = REPO, CONFIG_TEXT = '';
+const CONFIG = Promise.all([
+  fetch('/admin/config.yml', { cache: 'no-store' }).then((r) => r.text()).catch(() => ''),
+  fetch('/site-config.json', { cache: 'no-store' }).then((r) => r.json()).catch(() => ({})),
+]).then(([t, sc]) => { CONFIG_TEXT = t; const b = (jsyaml.load(t) || {}).backend || {}; const r = sc.repo || b.repo; if (r) REPO = CONFIG_REPO = r; if (b.branch) BRANCH = b.branch; });
+const REPO_INFO = CONFIG.then(async () => {
+  const t = (() => { try { return JSON.parse(localStorage.getItem('decap-cms-user') || '{}').token; } catch (e) { return ''; } })();
+  if (!t) return null;
+  const r = await fetch(`https://api.github.com/repos/${CONFIG_REPO}`, { headers: { Authorization: 'token ' + t, Accept: 'application/vnd.github+json' } });
+  if (!r.ok) return null;
+  const info = await r.json();
+  if (info.full_name && info.full_name.toLowerCase() !== CONFIG_REPO.toLowerCase()) {
+    REPO = info.full_name;
+    document.getElementById('moved-to').textContent = info.full_name;
+    document.getElementById('moved').hidden = false;
+  }
+  return info;
+}).catch(() => null);
+// 案例分類與服務清單來自網站設定（後台「公司基本資料 → 案例分類」）
+let CATS = [], SVCS = [], CAT2SVC = {}, SITECFG = {};
+const SITE_CFG = fetch('/site-config.json', { cache: 'no-store' }).then((r) => r.json()).then((c) => {
+  SITECFG = c;
+  CATS = (c.categories || []).map((x) => x.name);
+  CAT2SVC = Object.fromEntries((c.categories || []).map((x) => [x.name, x.service]));
+  SVCS = (c.services || []).map((x) => [x.id, x.name]);
+}).catch(() => {});
+const DIRS = { cases: 'src/content/cases', blog: 'src/content/blog' };
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const esc = (v) => String(v ?? '').replace(/[&<>"']/g, (c) => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+const today = () => new Date(Date.now() + 8 * 3600e3).toISOString().slice(0, 10);
+
+// ---------- 狀態訊息 ----------
+let stT;
+function status(msg, kind = '', stay = false) {
+  const el = $('#status'); el.textContent = msg; el.className = 'status show ' + kind;
+  clearTimeout(stT); if (!stay) stT = setTimeout(() => el.classList.remove('show'), 4500);
+}
+
+// ---------- 登入（共用 Decap 的 GitHub token）----------
+let TOKEN = '';
+try { TOKEN = JSON.parse(localStorage.getItem('decap-cms-user') || '{}').token || ''; } catch (e) {}
+if (!TOKEN) { $('#login').hidden = false; } else { $('#app').hidden = false; }
+
+async function gh(path, opt = {}) {
+  await CONFIG; await REPO_INFO;
+  const res = await fetch(API + path, { ...opt, headers: { Authorization: 'token ' + TOKEN, Accept: 'application/vnd.github+json', ...(opt.body ? { 'Content-Type': 'application/json' } : {}), ...(opt.headers || {}) } });
+  if (res.status === 401) { localStorage.removeItem('decap-cms-user'); throw new Error('登入已過期，請回後台重新登入'); }
+  if (!res.ok) throw new Error(`GitHub ${res.status}：${(await res.text()).slice(0, 120)}`);
+  return opt.raw ? res.text() : res.json();
+}
+const ghRaw = (p) => gh(`/repos/${REPO}/contents/${encodeURI(p)}?ref=${BRANCH}`, { raw: true, headers: { Accept: 'application/vnd.github.raw' } });
+
+// 一次 commit 多個檔案（文字或圖片）→ 只觸發一次網站部署
+async function commitFiles(files, message) {
+  const ref = await gh(`/repos/${REPO}/git/ref/heads/${BRANCH}`);
+  const head = ref.object.sha;
+  const commit = await gh(`/repos/${REPO}/git/commits/${head}`);
+  const tree = [];
+  let n = 0;
+  for (const f of files) {
+    if (f.base64) {
+      status(`上傳圖片 ${++n}/${files.filter((x) => x.base64).length}…`, '', true);
+      const blob = await gh(`/repos/${REPO}/git/blobs`, { method: 'POST', body: JSON.stringify({ content: f.base64, encoding: 'base64' }) });
+      tree.push({ path: f.path, mode: '100644', type: 'blob', sha: blob.sha });
+    } else {
+      tree.push({ path: f.path, mode: '100644', type: 'blob', content: f.content });
+    }
+  }
+  status('寫入中…', '', true);
+  const t = await gh(`/repos/${REPO}/git/trees`, { method: 'POST', body: JSON.stringify({ base_tree: commit.tree.sha, tree }) });
+  const c = await gh(`/repos/${REPO}/git/commits`, { method: 'POST', body: JSON.stringify({ message, tree: t.sha, parents: [head] }) });
+  await gh(`/repos/${REPO}/git/refs/heads/${BRANCH}`, { method: 'PATCH', body: JSON.stringify({ sha: c.sha }) });
+  return c.sha;
+}
+
+// ---------- Markdown 前置資料 ----------
+const Y = { schema: jsyaml.CORE_SCHEMA };
+function parseMd(text) {
+  const m = text.match(/^---\r?\n([\s\S]*?)\r?\n---\r?\n?([\s\S]*)$/);
+  return m ? { data: jsyaml.load(m[1], Y) || {}, body: m[2] } : { data: {}, body: text };
+}
+function toMd(data, body) {
+  const clean = Object.fromEntries(Object.entries(data).filter(([, v]) => v !== undefined && v !== null && v !== ''));
+  return `---\n${jsyaml.dump(clean, { ...Y, lineWidth: -1, noRefs: true })}---\n\n${(body || '').trim()}\n`;
+}
+
+// ---------- 載入現有內容 ----------
+const DB = { cases: null, blog: null };
+async function load(type, force) {
+  if (DB[type] && !force) return DB[type];
+  status('讀取資料中…', '', true);
+  const list = await gh(`/repos/${REPO}/contents/${DIRS[type]}?ref=${BRANCH}`);
+  const md = list.filter((f) => f.name.endsWith('.md'));
+  DB[type] = await Promise.all(md.map(async (f) => { const p = parseMd(await ghRaw(f.path)); return { path: f.path, id: f.name.replace(/\.md$/, ''), ...p, orig: JSON.stringify(p.data) }; }));
+  DB[type].sort((a, b) => String(b.data.date).localeCompare(String(a.data.date)));
+  $('#status').classList.remove('show');
+  return DB[type];
+}
+
+// ---------- 分頁 ----------
+$$('nav.tabs button').forEach((b) => b.addEventListener('click', () => {
+  $$('nav.tabs button').forEach((x) => x.setAttribute('aria-selected', x === b));
+  $$('section[data-panel]').forEach((s) => (s.hidden = s.dataset.panel !== b.dataset.tab));
+  if (b.dataset.tab === 'edit') renderEdit();
+  if (b.dataset.tab === 'users') renderUsers();
+  if (b.dataset.tab === 'report') renderReport();
+  history.replaceState(null, '', '#' + b.dataset.tab);
+}));
+const openTab = () => { const b = $(`nav.tabs button[data-tab="${location.hash.slice(1)}"]`); if (b && TOKEN) b.click(); };
+window.addEventListener('hashchange', openTab);
+
+// ============ ① 多張照片上架 ============
+SITE_CFG.then(() => {
+  $('#p-cat').innerHTML = CATS.map((c) => `<option>${esc(c)}</option>`).join('');
+  $('#p-svc').innerHTML = SVCS.map(([v, l]) => `<option value="${v}">${esc(l)}</option>`).join('');
+  $('#e-bulkcat').innerHTML += CATS.map((c) => `<option>${esc(c)}</option>`).join('');
+  $('#p-svc').value = CAT2SVC[$('#p-cat').value] || (SVCS[0] || [''])[0];
+  const L = SITECFG.labels || {};
+  if (L.cases) { $('#i-type').options[0].text = `匯入：${L.cases}（案例）`; $('#e-type').options[0].text = L.cases; }
+  if (L.blog) { $('#i-type').options[1].text = `匯入：${L.blog}（文章）`; $('#e-type').options[1].text = L.blog; }
+  if (L.cases) LABEL.cases = L.cases; if (L.blog) LABEL.blog = L.blog; if (L.services) LABEL.services = L.services;
+  document.title = `${SITECFG.brand || ''} 批次工具`; $('header h1').textContent = `${SITECFG.brand || ''} 批次工具`;
+});
+$('#p-cat').addEventListener('change', () => { $('#p-svc').value = CAT2SVC[$('#p-cat').value] || (SVCS[0] || [''])[0]; });
+$('#p-date').value = today();
+
+async function fillTargets() {
+  try {
+    const cases = await load('cases');
+    $('#p-target').innerHTML = '<option value="__new">＋ 新增一個案例</option>' + cases.map((c) => `<option value="${esc(c.id)}">${esc(c.data.title)}</option>`).join('');
+  } catch (e) { status(e.message, 'err'); }
+}
+if (TOKEN) fillTargets();
+$('#p-target').addEventListener('change', () => { $('#p-newfields').hidden = $('#p-target').value !== '__new'; });
+
+let PHOTOS = [];
+async function shrink(file) {
+  const bmp = await createImageBitmap(file, { imageOrientation: 'from-image' }).catch(() => null);
+  if (!bmp) throw new Error(`無法讀取 ${file.name}（請改選 JPG/PNG）`);
+  const max = 1600, s = Math.min(1, max / Math.max(bmp.width, bmp.height));
+  const c = document.createElement('canvas'); c.width = Math.round(bmp.width * s); c.height = Math.round(bmp.height * s);
+  c.getContext('2d').drawImage(bmp, 0, 0, c.width, c.height);
+  const blob = await new Promise((r) => c.toBlob(r, 'image/jpeg', 0.82));
+  const b64 = await new Promise((r) => { const fr = new FileReader(); fr.onload = () => r(fr.result.split(',')[1]); fr.readAsDataURL(blob); });
+  return { url: URL.createObjectURL(blob), base64: b64, alt: '' };
+}
+function drawThumbs() {
+  $('#p-thumbs').innerHTML = PHOTOS.map((p, i) => `<figure><img src="${p.url}" alt=""><button data-del="${i}" aria-label="移除">×</button><input data-alt="${i}" value="${esc(p.alt)}" placeholder="照片說明"></figure>`).join('');
+}
+$('#p-thumbs').addEventListener('click', (e) => { const i = e.target.dataset.del; if (i !== undefined) { PHOTOS.splice(+i, 1); drawThumbs(); } });
+$('#p-thumbs').addEventListener('input', (e) => { const i = e.target.dataset.alt; if (i !== undefined) PHOTOS[+i].alt = e.target.value; });
+$('#p-altall').addEventListener('change', () => { PHOTOS.forEach((p) => (p.alt = $('#p-altall').value)); drawThumbs(); });
+$('#p-files').addEventListener('change', async (e) => {
+  const files = [...e.target.files]; let n = 0;
+  for (const f of files) {
+    status(`處理照片 ${++n}/${files.length}…`, '', true);
+    try { const p = await shrink(f); p.alt = $('#p-altall').value; PHOTOS.push(p); } catch (err) { status(err.message, 'err'); }
+  }
+  e.target.value = ''; drawThumbs(); status(`已加入 ${files.length} 張，共 ${PHOTOS.length} 張`, 'ok');
+});
+
+$('#p-submit').addEventListener('click', async () => {
+  const btn = $('#p-submit');
+  try {
+    if (!PHOTOS.length) throw new Error('請先選照片');
+    const target = $('#p-target').value;
+    const stamp = Date.now().toString(36);
+    let entry, path, slug;
+    if (target === '__new') {
+      const title = $('#p-title').value.trim(); slug = $('#p-slug').value.trim().toLowerCase();
+      if (!title) throw new Error('請填案例標題');
+      if (!/^[a-z0-9-]+$/.test(slug)) throw new Error('網址代稱只能用英文小寫、數字與 -');
+      const date = $('#p-date').value || today();
+      path = `${DIRS.cases}/${date.replace(/-/g, '')}-${slug}.md`;
+      const cases = await load('cases');
+      if (cases.some((c) => c.path === path)) throw new Error('已有同網址的案例，請換一個網址代稱');
+      entry = { data: { title, slug, category: $('#p-cat').value, service: $('#p-svc').value, location: $('#p-loc').value.trim(), date, summary: $('#p-sum').value.trim() || title, cover: '', featured: false, draft: $('#p-draft').checked, photos: [] }, body: '' };
+    } else {
+      const c = (await load('cases')).find((x) => x.id === target); entry = { data: { ...c.data }, body: c.body }; path = c.path; slug = c.data.slug || c.id;
+      entry.data.photos = [...(entry.data.photos || [])];
+    }
+    const files = [];
+    const label = [entry.data.location, entry.data.category].filter(Boolean).join(' ');
+    PHOTOS.forEach((p, i) => {
+      const fp = `/uploads/cases/${slug}/${stamp}-${String(i + 1).padStart(2, '0')}.jpg`;
+      files.push({ path: 'public' + fp, base64: p.base64 });
+      entry.data.photos.push({ src: fp, alt: p.alt || `${label}施工照片 ${entry.data.photos.length + 1}` });
+    });
+    if (!entry.data.cover) entry.data.cover = entry.data.photos[0].src;
+    files.push({ path, content: toMd(entry.data, entry.body) });
+    btn.disabled = true;
+    await commitFiles(files, `批次上架照片：${entry.data.title}（${PHOTOS.length} 張）`);
+    PHOTOS = []; drawThumbs(); DB.cases = null; fillTargets();
+    status('完成！約 2～3 分鐘後網站更新', 'ok');
+  } catch (e) { status(e.message, 'err'); } finally { btn.disabled = false; }
+});
+
+// ============ ② 匯入多個案例 ============
+const COLS = {
+  cases: ['標題', '照片名稱', '網址代稱', '分類', '地點', '日期', '摘要', '說明', '照片網址', '精選', '草稿'],
+  blog: ['標題', '網址代稱', '日期', '摘要', '重點整理', '內文', '標籤', '封面網址', '草稿'],
+};
+const showCols = () => { $('#i-photobox').hidden = $('#i-type').value !== 'cases'; $('#i-cols').textContent = '欄位：' + COLS[$('#i-type').value].join('、') + '（照片網址、重點整理、標籤可用「|」分隔多個；精選、草稿填「是」或留白）'; };
+$('#i-type').addEventListener('change', () => { showCols(); $('#i-result').innerHTML = ''; $('#i-submit').disabled = true; });
+showCols();
+
+function parseTable(text) {
+  const sep = text.includes('\t') ? '\t' : ',';
+  const rows = []; let row = [], cell = '', q = false;
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    if (q) { if (ch === '"' && text[i + 1] === '"') { cell += '"'; i++; } else if (ch === '"') q = false; else cell += ch; }
+    else if (ch === '"') q = true;
+    else if (ch === sep) { row.push(cell); cell = ''; }
+    else if (ch === '\n' || ch === '\r') { if (ch === '\r' && text[i + 1] === '\n') i++; row.push(cell); rows.push(row); row = []; cell = ''; }
+    else cell += ch;
+  }
+  if (cell || row.length) { row.push(cell); rows.push(row); }
+  return rows.filter((r) => r.some((c) => c.trim()));
+}
+$('#i-tpl').addEventListener('click', () => {
+  const t = $('#i-type').value;
+  const sample = t === 'cases'
+    ? ['北屯 30 年透天老屋翻新｜水電重拉與浴室防水', '北屯透天', 'beitun-old-house', CATS[0] || '分類名稱', '○○市○○區', today(), '30 年透天全室翻新，重拉水電、浴室重做防水。', '## 屋況\n屋齡 30 年…', '', '是', '']
+    : ['老屋水電要全部換嗎？', 'old-house-wiring', today(), '屋齡超過 20 年建議全面更新水電。', '重點一|重點二|重點三', '## 小標題\n內文…', '老屋翻新|水電', '', ''];
+  const csv = '﻿' + [COLS[t], sample].map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\r\n');
+  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' })); a.download = `${t === 'cases' ? '案例' : '文章'}匯入範本.csv`; a.click();
+});
+$('#i-file').addEventListener('change', async (e) => { const f = e.target.files[0]; if (f) $('#i-text').value = (await f.text()).replace(/^﻿/, ''); });
+
+let IMPORT = [], IMPORT_FILES = [], UNMATCHED = [];
+// 檔名比對：全形轉半形、去空白與大小寫；檔名尾端的編號（-01、_2、(3)、 4）視為順序
+const norm = (v) => String(v || '').normalize('NFKC').toLowerCase().replace(/[\s\u3000]+/g, '');
+function splitName(name) {
+  const base = name.replace(/\.[^.]+$/, '');
+  const m = base.match(/^(.*?)[\s_\-－—–.]*[(（]?(\d{1,4})[)）]?$/);
+  return m && m[1] ? { key: norm(m[1]), full: norm(base), n: +m[2] } : { key: norm(base), full: norm(base), n: 0 };
+}
+$('#i-photos').addEventListener('change', (e) => {
+  IMPORT_FILES = [...e.target.files];
+  $('#i-photocount').textContent = IMPORT_FILES.length ? `已選 ${IMPORT_FILES.length} 張照片，按「檢查資料」查看配對結果` : '';
+  $('#i-submit').disabled = true;
+});
+var _ = 0;
+const yes = (v) => /^(是|y|yes|true|1|v|✓)$/i.test(String(v).trim());
+const splitList = (v) => String(v || '').split(/[|\n]/).map((s) => s.trim()).filter(Boolean);
+$('#i-parse').addEventListener('click', async () => {
+  try {
+    const t = $('#i-type').value, rows = parseTable($('#i-text').value.trim());
+    if (rows.length < 2) throw new Error('至少要有標題列和一筆資料');
+    const head = rows[0].map((h) => h.trim()), idx = (k) => head.indexOf(k), get = (r, k) => (idx(k) >= 0 ? (r[idx(k)] || '').trim() : '');
+    const miss = ['標題', '網址代稱'].filter((k) => idx(k) < 0); if (miss.length) throw new Error('缺少欄位：' + miss.join('、'));
+    const existing = new Set((await load(t)).map((x) => x.path));
+    IMPORT = rows.slice(1).map((r, n) => {
+      const errs = [], slug = get(r, '網址代稱').toLowerCase(), date = get(r, '日期') || today();
+      if (!get(r, '標題')) errs.push('缺標題');
+      if (!/^[a-z0-9-]+$/.test(slug)) errs.push('網址代稱只能英文小寫、數字、-');
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) errs.push('日期格式要 2026-01-31');
+      let data, body, path;
+      if (t === 'cases') {
+        const cat = get(r, '分類'); if (!CATS.includes(cat)) errs.push('分類不在清單內');
+        const photos = splitList(get(r, '照片網址')).map((src, i) => ({ src, alt: `${[get(r, '地點'), cat].filter(Boolean).join(' ')}施工照片 ${i + 1}` }));
+        data = { title: get(r, '標題'), slug, category: cat, service: CAT2SVC[cat] || (SVCS[0] || [''])[0], location: get(r, '地點'), date, summary: get(r, '摘要') || get(r, '標題'), cover: photos[0]?.src || SITECFG.ogImage || '', featured: yes(get(r, '精選')), draft: yes(get(r, '草稿')), photos };
+        body = get(r, '說明'); path = `${DIRS.cases}/${date.replace(/-/g, '')}-${slug}.md`;
+      } else {
+        data = { title: get(r, '標題'), slug, date, summary: get(r, '摘要') || get(r, '標題'), keyPoints: splitList(get(r, '重點整理')), cover: get(r, '封面網址'), tags: splitList(get(r, '標籤')), draft: yes(get(r, '草稿')) };
+        body = get(r, '內文'); if (!body) errs.push('缺內文'); path = `${DIRS.blog}/${slug}.md`;
+      }
+      if (existing.has(path)) errs.push('網址代稱已存在');
+      return { n: n + 2, data, body, path, errs };
+    });
+    const dup = new Set(); IMPORT.forEach((it) => { if (dup.has(it.path)) it.errs.push('表內網址代稱重複'); dup.add(it.path); });
+    // 照片依檔名配對到案例
+    UNMATCHED = [];
+    if (t === 'cases') {
+      const owner = new Map();
+      IMPORT.forEach((it, k) => {
+        it.files = [];
+        const keys = [rows[k + 1][idx('照片名稱')], it.data.title, it.data.title.split(/[|｜]/)[0], it.data.slug].map(norm).filter(Boolean);
+        keys.forEach((key) => { if (owner.has(key) && owner.get(key) !== it) it.errs.push('照片名稱和其他案例重複'); owner.set(key, it); });
+      });
+      IMPORT_FILES.forEach((f) => {
+        const s = splitName(f.name), it = owner.get(s.full) || owner.get(s.key);
+        if (it) it.files.push({ f, n: s.n }); else UNMATCHED.push(f.name);
+      });
+      IMPORT.forEach((it) => { it.files.sort((a, b) => a.n - b.n || a.f.name.localeCompare(b.f.name, 'zh-Hant', { numeric: true })); });
+    }
+    const bad = IMPORT.filter((x) => x.errs.length);
+    $('#i-result').innerHTML = `<p><strong>${IMPORT.length}</strong> 筆，<span style="color:var(--ok)">${IMPORT.length - bad.length} 筆可匯入</span>${bad.length ? `，<span style="color:var(--err)">${bad.length} 筆有問題（不會匯入）</span>` : ''}</p>
+      <div class="scroll"><table><tr><th>列</th><th>標題</th><th>網址</th>${t === 'cases' ? '<th>配到照片</th>' : ''}<th>狀態</th></tr>${IMPORT.map((it) => `<tr><td>${it.n}</td><td>${esc(it.data.title)}</td><td>${esc(it.data.slug)}</td>${t === 'cases' ? `<td>${it.files.length ? `<strong>${it.files.length} 張</strong><br><span class="hint">${esc(it.files.slice(0, 3).map((x) => x.f.name).join('、'))}${it.files.length > 3 ? '…' : ''}</span>` : '<span class="hint">0 張</span>'}</td>` : ''}<td>${it.errs.length ? `<span style="color:var(--err)">${esc(it.errs.join('、'))}</span>` : '<span class="pill live">OK</span>'}</td></tr>`).join('')}</table></div>` + (UNMATCHED.length ? `<p style="color:var(--err)"><strong>${UNMATCHED.length} 張照片找不到對應案例（不會上傳）：</strong><br>${esc(UNMATCHED.join('、'))}</p><p class="hint">請檢查檔名是否和「照片名稱」或標題「｜」前那段一致。</p>` : '');
+    $('#i-submit').disabled = !(IMPORT.length - bad.length);
+  } catch (e) { status(e.message, 'err'); }
+});
+$('#i-submit').addEventListener('click', async () => {
+  const ok = IMPORT.filter((x) => !x.errs.length), btn = $('#i-submit');
+  if (!ok.length) return;
+  try {
+    btn.disabled = true;
+    const files = [], stamp = Date.now().toString(36), total = ok.reduce((a, it) => a + (it.files?.length || 0), 0);
+    let done = 0;
+    for (const it of ok) {
+      const label = [it.data.location, it.data.category].filter(Boolean).join(' ');
+      for (const { f } of it.files || []) {
+        status(`處理照片 ${++done}/${total}…`, '', true);
+        const p = await shrink(f), fp = `/uploads/cases/${it.data.slug}/${stamp}-${String(it.data.photos.length + 1).padStart(2, '0')}.jpg`;
+        files.push({ path: 'public' + fp, base64: p.base64 });
+        it.data.photos.push({ src: fp, alt: `${label}施工照片 ${it.data.photos.length + 1}` });
+        URL.revokeObjectURL(p.url);
+      }
+      if (it.files?.length && (!it.data.cover || it.data.cover === SITECFG.ogImage)) it.data.cover = it.data.photos[0].src;
+      files.push({ path: it.path, content: toMd(it.data, it.body) });
+    }
+    await commitFiles(files, `批次匯入 ${ok.length} 筆${$('#i-type').value === 'cases' ? '案例' : '文章'}${total ? `（含 ${total} 張照片）` : ''}`);
+    IMPORT_FILES = []; $('#i-photos').value = ''; $('#i-photocount').textContent = '';
+    DB[$('#i-type').value] = null; IMPORT = []; $('#i-result').innerHTML = ''; $('#i-text').value = ''; fillTargets();
+    status(`已匯入 ${ok.length} 筆！約 2～3 分鐘後網站更新`, 'ok');
+  } catch (e) { status(e.message, 'err'); btn.disabled = false; }
+});
+
+// ============ ③ 批次修改／發布 ============
+const type = () => $('#e-type').value;
+async function renderEdit(force) {
+  try {
+    const t = type(), items = await load(t, force);
+    $$('[data-only]').forEach((el) => (el.hidden = el.dataset.only !== t));
+    const isC = t === 'cases';
+    $('#e-table').innerHTML = `<thead><tr><th class="c"><input type="checkbox" id="e-all" aria-label="全選"></th><th>標題</th>${isC ? '<th>分類</th><th>地點</th><th class="c">精選</th>' : '<th>日期</th>'}<th>狀態</th></tr></thead><tbody>` +
+      items.map((it, i) => `<tr data-i="${i}">
+        <td class="c"><input type="checkbox" class="e-chk" aria-label="選取"></td>
+        <td data-l="標題"><input data-f="title" value="${esc(it.data.title)}"></td>
+        ${isC ? `<td data-l="分類"><select data-f="category">${CATS.map((c) => `<option ${c === it.data.category ? 'selected' : ''}>${esc(c)}</option>`).join('')}</select></td>
+        <td data-l="地點"><input data-f="location" value="${esc(it.data.location || '')}" placeholder="○○市○○區"></td>
+        <td class="c" data-l="精選"><input type="checkbox" data-f="featured" ${it.data.featured ? 'checked' : ''}></td>` : `<td data-l="日期"><input type="date" data-f="date" value="${esc(String(it.data.date).slice(0, 10))}"></td>`}
+        <td data-l="狀態"><label style="margin:0;font-weight:400"><input type="checkbox" data-f="draft" ${it.data.draft ? 'checked' : ''} style="width:auto"> 草稿</label> <span class="pill ${it.data.draft ? 'draft' : 'live'}">${it.data.draft ? '未上線' : '已上線'}</span></td>
+      </tr>`).join('') + '</tbody>';
+    $('#e-count').textContent = `共 ${items.length} 筆`;
+    $('#e-all').addEventListener('change', (e) => $$('.e-chk').forEach((c) => (c.checked = e.target.checked)));
+    refreshCount();
+  } catch (e) { status(e.message, 'err'); }
+}
+function setField(tr, f, v) {
+  const it = DB[type()][+tr.dataset.i]; it.data[f] = v;
+  if (f === 'category') it.data.service = CAT2SVC[v] || it.data.service;
+  const el = tr.querySelector(`[data-f="${f}"]`); if (el) { if (el.type === 'checkbox') el.checked = !!v; else el.value = v; }
+  if (f === 'draft') { const p = tr.querySelector('.pill'); p.className = 'pill ' + (v ? 'draft' : 'live'); p.textContent = v ? '未上線' : '已上線'; }
+}
+function refreshCount() {
+  const items = DB[type()] || []; let n = 0;
+  $$('#e-table tbody tr').forEach((tr) => { const ch = JSON.stringify(items[+tr.dataset.i].data) !== items[+tr.dataset.i].orig; tr.classList.toggle('changed', ch); n += ch; });
+  $('#e-submit').textContent = `儲存所有變更（${n}）`; $('#e-submit').disabled = !n;
+}
+$('#e-table').addEventListener('change', (e) => {
+  const tr = e.target.closest('tr[data-i]'), f = e.target.dataset.f; if (!tr || !f) return;
+  setField(tr, f, e.target.type === 'checkbox' ? e.target.checked : e.target.value.trim()); refreshCount();
+});
+const checked = () => $$('.e-chk:checked').map((c) => c.closest('tr'));
+$$('[data-bulk]').forEach((b) => b.addEventListener('click', () => {
+  const rows = checked(); if (!rows.length) return status('請先勾選項目', 'err');
+  const a = b.dataset.bulk;
+  rows.forEach((tr) => { if (a === 'publish') setField(tr, 'draft', false); if (a === 'draft') setField(tr, 'draft', true); if (a === 'feature') setField(tr, 'featured', true); if (a === 'unfeature') setField(tr, 'featured', false); });
+  refreshCount(); status(`已套用到 ${rows.length} 筆，記得按「儲存所有變更」`);
+}));
+$('#e-bulkcat').addEventListener('change', (e) => {
+  const v = e.target.value, rows = checked(); e.target.value = ''; if (!v) return; if (!rows.length) return status('請先勾選項目', 'err');
+  rows.forEach((tr) => setField(tr, 'category', v)); refreshCount(); status(`已改 ${rows.length} 筆分類，記得按儲存`);
+});
+$('#e-bulkloc').addEventListener('keydown', (e) => {
+  if (e.key !== 'Enter') return; const v = e.target.value.trim(), rows = checked(); if (!rows.length) return status('請先勾選項目', 'err');
+  rows.forEach((tr) => setField(tr, 'location', v)); e.target.value = ''; refreshCount(); status(`已改 ${rows.length} 筆地點，記得按儲存`);
+});
+$('#e-type').addEventListener('change', () => renderEdit());
+$('#e-reload').addEventListener('click', () => renderEdit(true));
+$('#e-submit').addEventListener('click', async () => {
+  const items = (DB[type()] || []).filter((it) => JSON.stringify(it.data) !== it.orig), btn = $('#e-submit');
+  if (!items.length) return;
+  try {
+    btn.disabled = true;
+    await commitFiles(items.map((it) => ({ path: it.path, content: toMd(it.data, it.body) })), `批次修改 ${items.length} 筆${type() === 'cases' ? '案例' : '文章'}`);
+    items.forEach((it) => (it.orig = JSON.stringify(it.data))); refreshCount(); DB.cases = type() === 'cases' ? DB.cases : DB.cases;
+    status(`已儲存 ${items.length} 筆！約 2～3 分鐘後網站更新`, 'ok');
+  } catch (e) { status(e.message, 'err'); btn.disabled = false; }
+});
+// ---------- 轉移後一鍵更新設定 ----------
+$('#moved-fix').addEventListener('click', async () => {
+  const btn = $('#moved-fix');
+  try {
+    btn.disabled = true;
+    const text = await ghRaw('public/admin/config.yml');
+    const next = text.replace(/^(\s*repo:\s*).*$/m, `$1${REPO}`);
+    if (next === text) throw new Error('設定檔裡找不到 repo 欄位，請聯絡網站管理者');
+    await commitFiles([{ path: 'public/admin/config.yml', content: next }], `網站已轉移到 ${REPO}：更新後台設定`);
+    $('#moved').hidden = true;
+    status('設定已更新！約 2～3 分鐘後生效，之後請重新登入後台', 'ok');
+  } catch (e) { status(e.message, 'err'); btn.disabled = false; }
+});
+
+// ============ 📊 SEO／GEO 健檢 ============
+const LV = { ok: 'var(--ok)', warn: '#b7791f', bad: 'var(--err)' };
+const colorOf = (n) => (n >= 80 ? LV.ok : n >= 55 ? LV.warn : LV.bad);
+const avg = (a) => (a.length ? Math.round(a.reduce((x, y) => x + y, 0) / a.length) : 0);
+function siteChecks(site, data) {
+  const r = [], so = site.social || {};
+  const socials = Object.values(so).filter(Boolean).length;
+  r.push(['SEO', so.googleBusiness ? 'ok' : 'bad', so.googleBusiness ? '已連結 Google 商家檔案' : '公司基本資料 → 填 Google 商家檔案連結（在地搜尋最重要）']);
+  r.push(['SEO', socials >= 3 ? 'ok' : socials ? 'warn' : 'bad', `已填 ${socials} 個社群帳號（建議 3 個以上：FB、IG、Google 商家…）`]);
+  r.push(['SEO', site.hours ? 'ok' : 'warn', site.hours ? '已填營業時間' : '公司基本資料 → 填營業時間']);
+  r.push(['SEO', site.geo && site.geo.lat ? 'ok' : 'warn', site.geo && site.geo.lat ? '已填地圖座標' : '公司基本資料 → 填地圖座標（Google 地圖右鍵複製）']);
+  const live = data.cases.filter((x) => !x.data.draft);
+  r.push(['SEO', live.length >= 15 ? 'ok' : live.length >= 8 ? 'warn' : 'bad', `已上線案例 ${live.length} 個（建議累積 15 個以上）`]);
+  const days = live.length ? Math.round((Date.now() - Math.max(...live.map((x) => +new Date(x.data.date)))) / 864e5) : 999;
+  r.push(['SEO', days <= 30 ? 'ok' : days <= 60 ? 'warn' : 'bad', days < 999 ? `最新案例是 ${days} 天前（建議每月至少上 2 個）` : '還沒有案例']);
+  const posts = data.blog.filter((x) => !x.data.draft);
+  r.push(['SEO', posts.length >= 12 ? 'ok' : posts.length >= 6 ? 'warn' : 'bad', `已上線文章 ${posts.length} 篇（建議累積 12 篇以上）`]);
+  const desc = site.description || '';
+  r.push(['GEO', len(desc) >= 100 && window.FZJ_SEO.areaRe().test(desc) ? 'ok' : 'warn', `公司介紹 100 字以上，寫清楚地區、服務、特色（AI 用來介紹${SITECFG.brand || '品牌'}）`]);
+  const faqN = data.services.reduce((a, x) => a + ((x.data.faqs || []).length), 0);
+  r.push(['GEO', faqN >= 50 ? 'ok' : faqN >= 30 ? 'warn' : 'bad', `服務頁常見問題共 ${faqN} 題（建議 50 題以上）`]);
+  const locN = live.filter((x) => /區|鄉|鎮/.test(x.data.location || '')).length;
+  r.push(['GEO', live.length && locN / live.length >= 0.8 ? 'ok' : 'warn', `案例有寫施工地點：${locN}/${live.length}（地點越多，AI 越會推薦給該區的人）`]);
+  return r;
+}
+const len = (s) => [...String(s || '').trim()].length;
+var LABEL = { cases: '案例', blog: '文章', services: '服務項目' };
+// 把「摘要 33 字（建議 50～100 字）」整理成「摘要：建議 50～100 字」，方便彙整
+function shortMsg(m) {
+  const i = m.indexOf('（');
+  if (i < 0) return m;
+  const head = m.slice(0, i).replace(/\s*\d+(\/\d+)?\s*(字|張|個|題|點|項)?/g, '').replace(/[：:]\s*$/, '').trim();
+  const tail = m.slice(i + 1).replace(/）$/, '');
+  return `${head}：${tail}`;
+}
+async function renderReport() {
+  const box = $('#r-body');
+  try {
+    if (!window.FZJ_SEO) throw new Error('評分模組載入失敗，請重新整理');
+    const { CHECKS, scoreOf } = window.FZJ_SEO;
+    status('分析全站內容中…', '', true);
+    const DIRS2 = { ...DIRS, services: 'src/content/services' };
+    if (!DB.services) {
+      const list = await gh(`/repos/${REPO}/contents/${DIRS2.services}?ref=${BRANCH}`);
+      DB.services = await Promise.all(list.filter((f) => f.name.endsWith('.md')).map(async (f) => { const p = parseMd(await ghRaw(f.path)); return { path: f.path, id: f.name.replace(/\.md$/, ''), ...p, orig: JSON.stringify(p.data) }; }));
+    }
+    const [cases, blog] = await Promise.all([load('cases'), load('blog')]);
+    const site = jsyaml.load(await ghRaw('src/data/site.json'), Y) || {};
+    const data = { cases, blog, services: DB.services };
+    const pages = [];
+    for (const col of ['cases', 'blog', 'services']) for (const it of data[col]) {
+      if (it.data.draft) continue;
+      const d = { ...it.data, body: it.body, slug: it.data.slug || it.id };
+      const list = CHECKS[col](d);
+      pages.push({ col, id: it.id, title: it.data.title, list, all: scoreOf(list), seo: scoreOf(list.filter(([g]) => g === 'SEO')), geo: scoreOf(list.filter(([g]) => g === 'GEO')) });
+    }
+    const sc = siteChecks(site, data);
+    const seo = Math.round(avg(pages.map((p) => p.seo)) * 0.8 + scoreOf(sc.filter(([g]) => g === 'SEO')) * 0.2);
+    const geo = Math.round(avg(pages.map((p) => p.geo)) * 0.8 + scoreOf(sc.filter(([g]) => g === 'GEO')) * 0.2);
+    const total = Math.round((seo + geo) / 2);
+    try { localStorage.setItem('fzj-health', JSON.stringify({ total, seo, geo, at: Date.now() })); } catch (e) {}
+    // 彙整問題
+    const agg = new Map();
+    for (const p of pages) for (const [g, lv, msg] of p.list) if (lv !== 'ok') {
+      const key = `${p.col}|${g}|${msg.replace(/\d+(\/\d+)?/g, '#').replace(/：.*$/, '')}`;
+      const a = agg.get(key) || { col: p.col, g, lv, msg, n: 0, bad: 0 }; a.n++; if (lv === 'bad') a.bad++; agg.set(key, a);
+    }
+    const top = [...agg.values()].sort((a, b) => b.bad * 2 + b.n - (a.bad * 2 + a.n)).slice(0, 10);
+    const ring = (n, title, sub, main) => `<div class="score ${main ? 'main' : ''}"><div class="ring" style="--p:${n};--c:${colorOf(n)}"><b style="color:${colorOf(n)}">${n}</b></div><h3>${title}</h3><p>${sub}</p></div>`;
+    const bar = (label, n) => `<div><span>${label}</span><i><span style="width:${n}%;background:${colorOf(n)}"></span></i><b style="color:${colorOf(n)}">${n}</b></div>`;
+    const item = ([g, lv, msg]) => `<li><span class="n" style="background:${LV[lv]}">${lv === 'ok' ? '✓' : lv === 'warn' ? '!' : '✕'}</span><span><span class="tag">${g}</span>${esc(msg)}</span></li>`;
+    box.innerHTML = `
+      <div class="scores">
+        ${ring(total, '網站總分', `${pages.length} 個頁面＋全站設定`, true)}
+        ${ring(seo, 'SEO 分數', 'Google 搜尋排名')}
+        ${ring(geo, 'GEO 分數', 'ChatGPT、AI 搜尋引用')}
+      </div>
+      <div class="card"><h2 style="margin:0 0 6px;font-size:18px">各區平均</h2><div class="bars">
+        ${['cases', 'blog', 'services'].map((c) => bar(`${LABEL[c]}（${pages.filter((p) => p.col === c).length}）`, avg(pages.filter((p) => p.col === c).map((p) => p.all)))).join('')}
+        ${bar('全站設定', scoreOf(sc))}
+      </div></div>
+      <div class="card"><h2 style="margin:0 0 6px;font-size:18px">優先改善（影響最多頁面的問題）</h2>
+        ${top.length ? `<ul class="issues" style="padding:0;margin:0">${top.map((a) => `<li><span class="n" style="background:${LV[a.bad ? 'bad' : 'warn']}">${a.n} 頁</span><span><span class="tag">${LABEL[a.col]}</span><span class="tag">${a.g}</span>${esc(shortMsg(a.msg))}</span></li>`).join('')}</ul>` : '<p class="hint">太棒了，沒有需要改善的項目！</p>'}
+      </div>
+      <div class="card"><h2 style="margin:0 0 6px;font-size:18px">全站設定</h2><ul class="issues" style="padding:0;margin:0">${sc.map(item).join('')}</ul></div>
+      <div class="card"><h2 style="margin:0 0 6px;font-size:18px">每一頁的分數（低分在前）</h2>
+        <div class="scroll"><table><tr><th>頁面</th><th class="c">總分</th><th class="c">SEO</th><th class="c">GEO</th><th>最該先改</th><th></th></tr>
+        ${pages.sort((a, b) => a.all - b.all).map((p) => { const worst = p.list.find(([, lv]) => lv === 'bad') || p.list.find(([, lv]) => lv === 'warn');
+          return `<tr><td><span class="tag">${LABEL[p.col]}</span>${esc(p.title)}</td><td class="c"><b style="color:${colorOf(p.all)}">${p.all}</b></td><td class="c" style="color:${colorOf(p.seo)}">${p.seo}</td><td class="c" style="color:${colorOf(p.geo)}">${p.geo}</td>
+          <td style="font-size:13px">${worst ? esc(worst[2]) : '—'}</td><td><a class="btn ghost" style="min-height:34px;padding:5px 12px;white-space:nowrap" href="/admin/#/collections/${p.col}/entries/${encodeURIComponent(p.id)}">去修改</a></td></tr>`; }).join('')}
+        </table></div>
+        <p class="hint">分數規則和編輯畫面右下角的小幫手相同。草稿不列入計分。</p>
+      </div>`;
+    $('#status').classList.remove('show');
+  } catch (e) { box.innerHTML = `<div class="card"><p style="color:var(--err)">${esc(e.message)}</p></div>`; status(e.message, 'err'); }
+}
+
+// ============ ④ 帳號權限 ============
+let ME = '';
+async function renderUsers() {
+  try {
+    if (!ME) ME = (await gh('/user')).login;
+    const [repo, cols, invs] = await Promise.all([
+      gh(`/repos/${REPO}`),
+      gh(`/repos/${REPO}/collaborators?affiliation=all&per_page=100`),
+      gh(`/repos/${REPO}/invitations?per_page=100`).catch(() => []),
+    ]);
+    const admin = repo.permissions?.admin;
+    $('#o-repo').textContent = repo.full_name; $('#o-owner').textContent = repo.owner.login + (repo.owner.type === 'Organization' ? '（組織）' : '');
+    $('#o-transfer').href = `https://github.com/${repo.full_name}/settings#danger-zone`;
+    $('#o-transfer').hidden = !admin;
+    $('#u-add').disabled = !admin;
+    if (!admin) $('#u-check').innerHTML = `<span style="color:var(--err)">只有網站擁有者（${esc(repo.owner.login)}）可以新增或移除帳號。</span>`;
+    $('#u-list').innerHTML = `<div class="scroll"><table><tr><th></th><th>GitHub 帳號</th><th>角色</th><th></th></tr>${cols.map((u) => {
+      const owner = u.login.toLowerCase() === repo.owner.login.toLowerCase();
+      return `<tr><td style="width:44px"><img src="${esc(u.avatar_url)}&s=64" alt="" width="32" height="32" style="border-radius:50%"></td>
+        <td><a href="${esc(u.html_url)}" target="_blank" rel="noopener">${esc(u.login)}</a>${u.login === ME ? ' <span class="pill">你</span>' : ''}</td>
+        <td>${owner ? '<span class="pill live">擁有者</span>' : '<span class="pill">可編輯內容</span>'}</td>
+        <td style="text-align:right">${!owner && admin ? `<button class="btn ghost" data-rm="${esc(u.login)}" style="min-height:36px;padding:6px 12px">移除權限</button>` : ''}</td></tr>`;
+    }).join('')}</table></div>`;
+    $('#u-inv').innerHTML = invs.length ? `<div class="scroll"><table><tr><th>GitHub 帳號</th><th>邀請時間</th><th></th></tr>${invs.map((v) => `<tr>
+      <td>${esc(v.invitee?.login || v.email || '')}</td><td>${esc(String(v.created_at).slice(0, 10))}</td>
+      <td style="text-align:right">${admin ? `<button class="btn ghost" data-cancel="${v.id}" style="min-height:36px;padding:6px 12px">取消邀請</button>` : ''}</td></tr>`).join('')}</table></div>` : '<p class="hint">目前沒有等待中的邀請。</p>';
+  } catch (e) { status(e.message, 'err'); $('#u-list').innerHTML = `<p style="color:var(--err)">${esc(e.message)}</p>`; }
+}
+let chkT;
+$('#u-name').addEventListener('input', () => {
+  clearTimeout(chkT); const n = $('#u-name').value.trim().replace(/^@/, '');
+  if (!n) { $('#u-check').textContent = ''; return; }
+  chkT = setTimeout(async () => {
+    try { const u = await gh(`/users/${encodeURIComponent(n)}`); $('#u-check').innerHTML = `<img src="${esc(u.avatar_url)}&s=40" width="20" height="20" style="border-radius:50%;vertical-align:middle"> 找到：<strong>${esc(u.login)}</strong>${u.name ? `（${esc(u.name)}）` : ''}`; }
+    catch (e) { $('#u-check').innerHTML = '<span style="color:var(--err)">找不到這個 GitHub 帳號，請確認拼字</span>'; }
+  }, 500);
+});
+$('#u-add').addEventListener('click', async () => {
+  const n = $('#u-name').value.trim().replace(/^@/, ''), btn = $('#u-add');
+  if (!n) return status('請輸入 GitHub 帳號名稱', 'err');
+  if (!confirm(`確定邀請「${n}」成為後台編輯者嗎？\n對方接受後就能上架、修改網站內容。`)) return;
+  try {
+    btn.disabled = true;
+    const res = await fetch(`${API}/repos/${REPO}/collaborators/${encodeURIComponent(n)}`, { method: 'PUT', headers: { Authorization: 'token ' + TOKEN, Accept: 'application/vnd.github+json', 'Content-Type': 'application/json' }, body: JSON.stringify({ permission: 'push' }) });
+    if (res.status === 404) throw new Error('找不到這個 GitHub 帳號');
+    if (res.status === 403) throw new Error('沒有權限：只有網站擁有者可以邀請');
+    if (!res.ok) throw new Error(`邀請失敗（${res.status}）`);
+    status(res.status === 201 ? `已寄出邀請給 ${n}，請他到 Email 按「接受」` : `${n} 原本就有權限了`, 'ok');
+    $('#u-name').value = ''; $('#u-check').textContent = ''; renderUsers();
+  } catch (e) { status(e.message, 'err'); } finally { btn.disabled = false; }
+});
+$('#u-reload').addEventListener('click', renderUsers);
+$('section[data-panel="users"]').addEventListener('click', async (e) => {
+  const rm = e.target.dataset.rm, cancel = e.target.dataset.cancel;
+  try {
+    if (rm) {
+      if (!confirm(`確定移除「${rm}」的後台權限嗎？\n移除後他就無法再登入後台（之後可以重新邀請）。`)) return;
+      await gh(`/repos/${REPO}/collaborators/${encodeURIComponent(rm)}`, { method: 'DELETE', raw: true });
+      status(`已移除 ${rm} 的權限`, 'ok'); renderUsers();
+    }
+    if (cancel) {
+      if (!confirm('確定取消這個邀請嗎？')) return;
+      await gh(`/repos/${REPO}/invitations/${cancel}`, { method: 'DELETE', raw: true });
+      status('已取消邀請', 'ok'); renderUsers();
+    }
+  } catch (err) { status(err.message, 'err'); }
+});
+openTab();
+
+window.addEventListener('beforeunload', (e) => { if (!$('#e-submit').disabled || PHOTOS.length) { e.preventDefault(); e.returnValue = ''; } });
+}
+</script>
+</body>
+</html>
