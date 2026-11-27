@@ -60,10 +60,7 @@ const floatMap = (site as any).social?.googleBusiness || (site as any).mapUrl ||
   <link rel="apple-touch-icon" href={img(site.logoSquare, 'sm')} />
   <link rel="sitemap" href="/sitemap-index.xml" />
   <link rel="alternate" type="text/plain" href="/llms.txt" title="LLM summary" />
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link rel="preconnect" href="https://images.unsplash.com" />
-  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@600;700;900&display=swap" rel="stylesheet" />
   {schemas.map((s) => <script type="application/ld+json" set:html={JSON.stringify(s)} />)}
   {site.tracking?.googleVerification && <meta name="google-site-verification" content={site.tracking.googleVerification} />}
   {site.tracking?.bingVerification && <meta name="msvalidate.01" content={site.tracking.bingVerification} />}

@@ -8,8 +8,8 @@
   --gold: #b08a3e;
   --gold-d: #8c6c2c;
   --white: #fff;
-  --serif: 'Noto Serif TC', 'Songti TC', serif;
-  --sans: 'Noto Sans TC', 'PingFang TC', 'Microsoft JhengHei', system-ui, sans-serif;
+  --serif: 'Microsoft JhengHei', '微軟正黑體', 'PingFang TC', 'Heiti TC', 'Noto Sans TC', sans-serif;
+  --sans: 'Microsoft JhengHei', '微軟正黑體', 'PingFang TC', 'Heiti TC', 'Noto Sans TC', system-ui, sans-serif;
   --r: 6px;
   --wrap: 1180px;
 }
