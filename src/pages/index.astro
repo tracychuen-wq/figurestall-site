@@ -25,7 +25,6 @@ const homeFaqs = H.faqs.map((f) => ({ q: fill(f.q), a: fill(f.a) }));
   <section class="hero">
     <img class="bg" src={img(site.heroImages[0], 'full')} alt={H.heroAlt} width="1920" height="750" fetchpriority="high" />
     <div class="wrap">
-      <span class="eyebrow" style="color:var(--accent-light)">{H.eyebrow}</span>
       <h1 set:html={rich(H.h1)} />
       <p class="lead">{fill(H.lead)}</p>
       <div class="actions">
@@ -38,7 +37,7 @@ const homeFaqs = H.faqs.map((f) => ({ q: fill(f.q), a: fill(f.a) }));
   <section class="block">
     <div class="wrap">
       <div class="section-head">
-        <div><span class="eyebrow">Services</span><h2>{fill(H.servicesTitle)}</h2></div>
+        <div><h2>{fill(H.servicesTitle)}</h2></div>
         <a href="/services/" class="btn btn-ghost">全部服務</a>
       </div>
       <div class="grid g3">
@@ -59,7 +58,6 @@ const homeFaqs = H.faqs.map((f) => ({ q: fill(f.q), a: fill(f.a) }));
   <section class="block alt">
     <div class="wrap split">
       <div>
-        <span class="eyebrow">About</span>
         <h2 set:html={rich(H.aboutTitle)} />
         {fill(H.aboutText).split(/\n\s*\n/).map((para) => <p set:html={rich(para)} />)}
         <div class="values">
@@ -73,18 +71,18 @@ const homeFaqs = H.faqs.map((f) => ({ q: fill(f.q), a: fill(f.a) }));
 
   <section class="block">
     <div class="wrap">
-      <div class="section-head"><div><span class="eyebrow">For You</span><h2 set:html={rich(H.audienceTitle)} /></div></div>
+      <div class="section-head"><div><h2 set:html={rich(H.audienceTitle)} /></div></div>
       <ul class="audience" style="padding:0">
-        {H.audience.map((a) => (
-          <li>{a.icon && <img src={img(a.icon)} alt="" width="56" height="56" loading="lazy" />}<h3>{a.title}</h3><p>{a.desc}</p></li>
-        ))}
+        {H.audience.map((a: any) => {
+          const inner = <>{a.icon && <img src={img(a.icon, 'md')} alt="" width="400" height="300" loading="lazy" />}<h3>{a.title}</h3><p>{a.desc}</p></>;
+          return <li class={a.icon && a.icon.length > 40 ? 'has-photo' : ''}>{a.link ? <a href={a.link}>{inner}</a> : inner}</li>;
+        })}
       </ul>
     </div>
   </section>
 
   <section class="block dark">
     <div class="wrap">
-      <span class="eyebrow">Process</span>
       <h2>{fill(H.processTitle)}</h2>
       <ol class="steps">
         {H.steps.map((st) => <li><h3>{st.title}</h3><p>{st.desc}</p></li>)}
@@ -95,7 +93,7 @@ const homeFaqs = H.faqs.map((f) => ({ q: fill(f.q), a: fill(f.a) }));
   <section class="block">
     <div class="wrap">
       <div class="section-head">
-        <div><span class="eyebrow">Cases</span><h2>{L.cases}</h2><p class="muted" style="margin:0">{fill(H.casesSub)}</p></div>
+        <div><h2>{L.cases}</h2><p class="muted" style="margin:0">{fill(H.casesSub)}</p></div>
         <a href="/cases/" class="btn btn-ghost">全部案例</a>
       </div>
       <div class="grid g3">{cases.map((c) => <CaseCard c={c} />)}</div>
@@ -105,7 +103,7 @@ const homeFaqs = H.faqs.map((f) => ({ q: fill(f.q), a: fill(f.a) }));
   <section class="block alt">
     <div class="wrap">
       <div class="section-head">
-        <div><span class="eyebrow">Knowledge</span><h2>{L.blog}</h2></div>
+        <div><h2>{L.blog}</h2></div>
         <a href="/blog/" class="btn btn-ghost">更多文章</a>
       </div>
       <div class="grid g3">{posts.map((p) => <PostCard p={p} />)}</div>
@@ -114,7 +112,6 @@ const homeFaqs = H.faqs.map((f) => ({ q: fill(f.q), a: fill(f.a) }));
 
   <section class="block">
     <div class="wrap narrow">
-      <span class="eyebrow">FAQ</span>
       <h2>{fill(H.faqTitle)}</h2>
       <Faq faqs={homeFaqs} />
       <p style="margin-top:20px"><a href="/faq/">{fill(H.faqMore)}</a></p>

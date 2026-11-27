@@ -32,7 +32,7 @@ import { fill, rich, md } from '../../lib/text';
   </section>
   <section class="block"><div class="wrap layout-side">
     <div>
-      <div class="answer-box"><strong class="lbl">簡單說</strong>{d.answer}</div>
+      <div class="answer-box">{(pages.labels as any).answerLabel !== '' && <strong class="lbl">{(pages.labels as any).answerLabel || '簡單說'}</strong>}{d.answer}</div>
       {d.signs.length > 0 && (<>
         <h2>{(pages.labels as any).signsTitle || '出現這些狀況，就該注意了'}</h2>
         <ul class="signs">{d.signs.map((x) => <li>{x}</li>)}</ul>

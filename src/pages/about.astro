@@ -21,7 +21,7 @@ import { fill, rich, md } from '../lib/text';
   <section class="block">
     <div class="wrap split">
       <div class="prose">
-        <div class="answer-box"><strong class="lbl">{A.answerLabel}</strong>{site.description}</div>
+        <div class="answer-box">{A.answerLabel && <strong class="lbl">{A.answerLabel}</strong>}{site.description}</div>
         <Fragment set:html={md(A.body1)} />
       </div>
       <img src={img(A.image, 'lg')} alt={A.imageAlt} loading="lazy" width="800" height="600" />

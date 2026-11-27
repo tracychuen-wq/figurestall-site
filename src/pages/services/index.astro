@@ -19,7 +19,6 @@ import { fill, rich, md } from '../../lib/text';
       <article class="split" style="margin-bottom:64px">
         <a href={`/services/${s.id}/`} style={i % 2 ? 'order:2' : ''}><img src={img(s.data.cover, 'lg')} alt={s.data.title} loading="lazy" width="800" height="600" /></a>
         <div>
-          <span class="eyebrow">0{i + 1}</span>
           <h2><a href={`/services/${s.id}/`} style="color:inherit;text-decoration:none">{s.data.title}</a></h2>
           <p>{s.data.summary}</p>
           {s.data.signs.length > 0 && <ul class="muted">{s.data.signs.slice(0, 3).map((x) => <li>{x}</li>)}</ul>}

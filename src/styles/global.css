@@ -123,7 +123,7 @@ section.dark h2 { color: #fff; }
 
 .steps { counter-reset: s; display: grid; grid-template-columns: repeat(5, 1fr); gap: 16px; padding: 0; }
 .steps li { list-style: none; border-top: 2px solid var(--gold); padding-top: 14px; }
-.steps li::before { counter-increment: s; content: '0' counter(s); font-family: var(--serif); font-size: 1.6rem; color: var(--gold); display: block; }
+.steps li::before { counter-increment: s; content: '步驟 ' counter(s); font-family: var(--sans); font-weight: 700; font-size: .9rem; color: var(--gold); display: block; }
 .steps h3 { font-size: 1.05rem; margin: 4px 0; }
 .steps p { font-size: .9rem; color: inherit; opacity: .85; margin: 0; }
 @media (max-width: 900px) { .steps { grid-template-columns: 1fr 1fr; } }
@@ -156,7 +156,7 @@ section.dark h2 { color: #fff; }
 
 .signs { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; padding: 0; }
 .signs li { list-style: none; background: #fff; border: 1px solid var(--line); border-radius: var(--r); padding: 14px 16px 14px 44px; position: relative; }
-.signs li::before { content: '!'; position: absolute; left: 14px; top: 14px; width: 20px; height: 20px; border-radius: 50%; background: var(--gold); color: #fff; font-size: .8rem; font-weight: 700; display: grid; place-items: center; }
+.signs li::before { content: ''; position: absolute; left: 18px; top: 23px; width: 8px; height: 8px; border-radius: 50%; background: var(--gold); color: #fff; font-size: .8rem; font-weight: 700; display: grid; place-items: center; }
 @media (max-width: 600px) { .signs { grid-template-columns: 1fr; } }
 
 /* gallery */
@@ -247,3 +247,10 @@ section.dark h2 { color: #fff; }
 .share-l { font-weight: 700; font-size: .92rem; }
 .share a, .share button { font: inherit; font-size: .88rem; font-weight: 700; padding: 6px 14px; border-radius: 99px; border: 1.5px solid var(--c); color: var(--c); background: #fff; text-decoration: none; cursor: pointer; }
 .share a:hover, .share button:hover { background: var(--c); color: #fff; }
+
+/* 作品照片卡（首頁「送給誰」） */
+.audience li.has-photo { padding: 0; overflow: hidden; text-align: left; }
+.audience li.has-photo a { color: inherit; text-decoration: none; display: block; padding-bottom: 16px; }
+.audience li.has-photo img { width: 100%; height: auto; aspect-ratio: 4 / 3; object-fit: cover; margin: 0 0 12px; border-radius: 0; background: var(--paper); }
+.audience li.has-photo h3, .audience li.has-photo p { padding: 0 14px; }
+.audience li.has-photo:hover img { opacity: .9; }
